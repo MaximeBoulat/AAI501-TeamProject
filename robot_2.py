@@ -97,7 +97,9 @@ def generate_training_data(world, path, run_id, starting_timestamp):
         sensors = get_sensor_readings(world, path[i])
         action = get_action(path[i], path[i + 1])
         if action is not None:
-            data.append((timestamp, run_id, sensors, action))
+            # Calculate remaining Euclidean distance to goal
+            remaining = np.linalg.norm(np.subtract(path[-1], path[i]))
+            data.append((timestamp, run_id, sensors, action, remaining))
             timestamp += 1
     return data, timestamp
 
@@ -156,7 +158,7 @@ for run_id in range(num_runs):
 with open("robot_training_data.csv", "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow(["timestamp", "run_id", "sensor_0", "sensor_1", "sensor_2", "sensor_3",
-                     "sensor_4", "sensor_5", "sensor_6", "sensor_7", "action"])
-    for timestamp, run_id, sensors, action in all_training_data:
-        writer.writerow([timestamp, run_id] + sensors + [action])
+                     "sensor_4", "sensor_5", "sensor_6", "sensor_7", "action", "distance_to_goal"])
+    for timestamp, run_id, sensors, action, distance_to_goal in all_training_data:
+        writer.writerow([timestamp, run_id] + sensors + [action, distance_to_goal])
 
