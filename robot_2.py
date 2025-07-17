@@ -10,6 +10,15 @@ ATTEMPTS = 100
 WALL_COUNT = 5
 WALL_MAX_LEN = 10
 OBSTALCE_PROB = 0.2
+
+SEED = 42
+
+# Set random seed for built-in random module
+random.seed(SEED)
+
+# Set random seed for NumPy
+np.random.seed(SEED)
+
 DIRECTIONS = [(-1, 0), (-1, 1), (0, 1), (1, 1),
               (1, 0), (1, -1), (0, -1), (-1, -1)]
 
