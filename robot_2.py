@@ -7,11 +7,13 @@ import os
 num_runs = 50
 WORLD_SIZE = 20
 ATTEMPTS = 100
+WALL_COUNT = 5
+WALL_MAX_LEN = 10
 OBSTALCE_PROB = 0.2
 DIRECTIONS = [(-1, 0), (-1, 1), (0, 1), (1, 1),
               (1, 0), (1, -1), (0, -1), (-1, -1)]
 
-def create_world(size=20, obstacle_prob=0.2, wall_count=5, max_wall_length=10):
+def create_world(size=WORLD_SIZE, obstacle_prob=OBSTALCE_PROB, wall_count=WALL_COUNT, max_wall_length=WALL_MAX_LEN):
     world = np.zeros((size, size), dtype=int)
     
     # Random single-tile obstacles
@@ -129,7 +131,7 @@ def save_world_to_disk(world, run_id, output_dir="worlds"):
 def simulate_world(run_id, starting_timestamp):
     attempts = 0
     while attempts < ATTEMPTS:
-        world = create_world(size=WORLD_SIZE, obstacle_prob=OBSTALCE_PROB)
+        world = create_world(size=WORLD_SIZE, obstacle_prob=OBSTALCE_PROB, wall_count=WALL_COUNT, max_wall_length=WALL_MAX_LEN)
         start = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
         goal = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
         path = a_star(world, start, goal)
