@@ -4,6 +4,10 @@ import random
 import csv
 import os
 
+num_runs = 50
+WORLD_SIZE = 20
+ATTEMPTS = 100
+OBSTALCE_PROB = 0.2
 DIRECTIONS = [(-1, 0), (-1, 1), (0, 1), (1, 1),
               (1, 0), (1, -1), (0, -1), (-1, -1)]
 
@@ -104,13 +108,10 @@ def save_world_to_disk(world, run_id, output_dir="worlds"):
 
 def simulate_world(run_id, starting_timestamp):
     attempts = 0
-    while attempts < 100:
-        world = create_world(size=20, obstacle_prob=0.2)
-        start = (0, 0)
-        goal = (19, 19)
-        if world[start[1]][start[0]] == 1 or world[goal[1]][goal[0]] == 1:
-            attempts += 1
-            continue
+    while attempts < ATTEMPTS:
+        world = create_world(size=WORLD_SIZE, obstacle_prob=OBSTALCE_PROB)
+        start = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
+        goal = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
         path = a_star(world, start, goal)
         if path:
             data, next_timestamp = generate_training_data(world, path, run_id, starting_timestamp)
@@ -122,7 +123,6 @@ def simulate_world(run_id, starting_timestamp):
     return [], starting_timestamp
 
 # === Run Multiple Worlds ===
-num_runs = 5000
 global_timestamp = 0
 all_training_data = []
 
