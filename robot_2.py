@@ -11,13 +11,33 @@ OBSTALCE_PROB = 0.2
 DIRECTIONS = [(-1, 0), (-1, 1), (0, 1), (1, 1),
               (1, 0), (1, -1), (0, -1), (-1, -1)]
 
-def create_world(size=20, obstacle_prob=0.2):
+def create_world(size=20, obstacle_prob=0.2, wall_count=5, max_wall_length=10):
     world = np.zeros((size, size), dtype=int)
+    
+    # Random single-tile obstacles
     for y in range(size):
         for x in range(size):
             if random.random() < obstacle_prob:
-                world[y][x] = 1  # obstacle
+                world[y][x] = 1
+
+    # Add horizontal or vertical walls
+    for _ in range(wall_count):
+        is_horizontal = random.choice([True, False])
+        wall_length = random.randint(3, max_wall_length)
+        
+        if is_horizontal:
+            y = random.randint(0, size - 1)
+            x_start = random.randint(0, size - wall_length)
+            for i in range(wall_length):
+                world[y][x_start + i] = 1
+        else:
+            x = random.randint(0, size - 1)
+            y_start = random.randint(0, size - wall_length)
+            for i in range(wall_length):
+                world[y_start + i][x] = 1
+
     return world
+
 
 def is_valid(world, x, y):
     return 0 <= x < world.shape[1] and 0 <= y < world.shape[0] and world[y][x] == 0
