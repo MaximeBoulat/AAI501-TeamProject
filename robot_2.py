@@ -10,7 +10,7 @@ ATTEMPTS = 100
 WALL_COUNT = 5
 WALL_MAX_LEN = 10
 OBSTALCE_PROB = 0.2
-
+MIN_START_GOAL_DISTANCE = 8
 SEED = 42
 
 # Set random seed for built-in random module
@@ -145,6 +145,13 @@ def simulate_world(run_id, starting_timestamp):
         world = create_world(size=WORLD_SIZE, obstacle_prob=OBSTALCE_PROB, wall_count=WALL_COUNT, max_wall_length=WALL_MAX_LEN)
         start = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
         goal = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
+
+        # Check distance is significant to make it interesting
+        dist = np.linalg.norm(np.subtract(start, goal))
+        if not (MIN_START_GOAL_DISTANCE <= dist):
+            attempts += 1
+            continue
+        
         path = a_star(world, start, goal)
         if path:
             data, next_timestamp = generate_training_data(world, path, run_id, starting_timestamp)
