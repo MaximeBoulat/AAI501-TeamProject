@@ -19,8 +19,8 @@ random.seed(SEED)
 # Set random seed for NumPy
 np.random.seed(SEED)
 
-DIRECTIONS = [(-1, 0), (-1, 1), (0, 1), (1, 1),
-              (1, 0), (1, -1), (0, -1), (-1, -1)]
+              #0 = left, 1 = left+down, 2 = down, 3=right+down, 4=right, 5=right+up,  6=up,   7=left+up 
+DIRECTIONS = [(-1, 0),   (-1, 1),      (0, 1),   (1, 1),        (1, 0),  (1, -1),    (0, -1), (-1, -1)]
 
 def create_world(size=WORLD_SIZE, obstacle_prob=OBSTALCE_PROB, wall_count=WALL_COUNT, max_wall_length=WALL_MAX_LEN):
     world = np.zeros((size, size), dtype=int)
