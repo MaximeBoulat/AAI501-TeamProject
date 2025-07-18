@@ -1,5 +1,3 @@
-Here is a detailed `README.md` file documenting the simulation code you provided:
-
 ---
 
 # Robot Navigation Pathfinding and Dataset Generator 🧭🤖
@@ -179,6 +177,3 @@ S * * * * * * * * * * * * * * * * * G .
 * Connect to RL frameworks like OpenAI Gym.
 
 ---
-
-Let me know if you want a matching `requirements.txt` or a `pytest` test suite!
-

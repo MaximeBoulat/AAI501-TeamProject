@@ -5,7 +5,7 @@ from collections import defaultdict
 from sklearn.preprocessing import KBinsDiscretizer
 
 # Load data
-df = pd.read_csv("sensor_data.csv")
+df = pd.read_csv("robot_training_data.csv")
 
 # Discretize sensor values into bins for Q-table compatibility
 sensor_cols = [f"sensor_{i}" for i in range(8)]
