@@ -26,18 +26,18 @@ def main():
 
     # Step 2: Generate training data
 
-    # logic = AStarLogic()
-    # simulator = Simulator(logic, renderer)
-    # simulator.generate_training_data(num_runs=1000)
+    logic = AStarLogic()
+    simulator = Simulator(logic, renderer)
+    simulator.generate_training_data(num_runs=100)
 
     # Step 3: Train a model and run it
 
     # logic = RandomForestLogic()
     # logic = XGBoostLogic()   
     # logic = LogisticRegressionLogic()
-    # logic = SVMLogic()
+    logic = SVMLogic()
     # logic = NaiveBayesLogic()
-    logic = KNNLogic()
+    # logic = KNNLogic()
     # logic = NeuralNetworkLogic()  
     # logic = NeuralNetworkLogic(hidden_layer_sizes=(200, 100, 50))  # Larger network
 
