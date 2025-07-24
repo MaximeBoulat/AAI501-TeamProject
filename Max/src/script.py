@@ -1,9 +1,15 @@
 from world import World
 from agent import Agent
+
 from logic import AStarLogic
+from logic import LogisticRegressionLogic
+from logic import SVMLogic
+from logic import NaiveBayesLogic
+from logic import KNNLogic
 from logic import RandomForestLogic
 from logic import XGBoostLogic
 from logic import NeuralNetworkLogic
+
 
 from renderer import PygameRenderer
 from renderer import ConsoleRenderer
@@ -20,19 +26,23 @@ def main():
 
     # Step 2: Generate training data
 
-    logic = AStarLogic()
-    simulator = Simulator(logic, renderer)
-    simulator.generate_training_data(num_runs=100)
+    # logic = AStarLogic()
+    # simulator = Simulator(logic, renderer)
+    # simulator.generate_training_data(num_runs=1000)
 
     # Step 3: Train a model and run it
 
     # logic = RandomForestLogic()
-    # logic = XGBoostLogic()           
-    # logic = NeuralNetworkLogic()     
+    # logic = XGBoostLogic()   
+    # logic = LogisticRegressionLogic()
+    # logic = SVMLogic()
+    # logic = NaiveBayesLogic()
+    logic = KNNLogic()
+    # logic = NeuralNetworkLogic()  
     # logic = NeuralNetworkLogic(hidden_layer_sizes=(200, 100, 50))  # Larger network
 
-    # simulator = Simulator(logic, renderer)
-    # simulator.run_simulation()
+    simulator = Simulator(logic, renderer)
+    simulator.run_simulation()
 
     
     return 0

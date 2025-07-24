@@ -5,6 +5,10 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from world import World
@@ -181,6 +185,303 @@ class RandomForestLogic(Logic):
                 return int(action)
         except Exception as e:
             print(f"Random Forest prediction error: {e}")
+        
+        return None
+
+class LogisticRegressionLogic(Logic):
+    """Multinomial Logistic Regression classifier logic implementation."""
+    
+    def __init__(self, csv_file: str = "training_data.csv", random_state: int = 42):
+        """
+        Initialize Logistic Regression logic with training data.
+        
+        Args:
+            csv_file: Path to training data CSV file
+            random_state: Random seed for reproducibility
+        """
+        self.model = LogisticRegression(
+            multi_class='multinomial',
+            solver='lbfgs',
+            random_state=random_state,
+            max_iter=1000
+        )
+        self._train_model(csv_file)
+    
+    def _train_model(self, csv_file: str):
+        """Train the Logistic Regression model on the provided data."""
+        try:
+            # Load training data
+            df = pd.read_csv(csv_file)
+            print(f"Loaded {len(df)} training samples from {csv_file}")
+            
+            # Prepare features: 8 sensor readings + distance_to_goal
+            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
+            X = df[feature_columns].values
+            y = df['action'].values
+            
+            # Split into train/test sets
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            # Train the model
+            self.model.fit(X_train, y_train)
+            
+            # Evaluate on test set
+            y_pred = self.model.predict(X_test)
+            accuracy = accuracy_score(y_test, y_pred)
+            print(f"Logistic Regression training completed. Test accuracy: {accuracy:.3f}")
+            
+        except FileNotFoundError:
+            print(f"Training data file {csv_file} not found. Model will not be available.")
+            self.model = None
+        except Exception as e:
+            print(f"Error training Logistic Regression model: {e}")
+            self.model = None
+    
+    def reset(self):
+        """Reset any internal state."""
+        pass
+    
+    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+        """Get next action using Logistic Regression prediction."""
+        if self.model is None:
+            return None
+            
+        # Get current sensor readings and distance
+        sensors = world.get_sensor_readings(current_position)
+        distance_to_goal = world.get_distance_to_goal(current_position)
+        
+        # Prepare input for model
+        features = np.array([sensors + [distance_to_goal]])
+        
+        # Get model prediction
+        try:
+            action = self.model.predict(features)[0]
+            
+            # Validate action is in valid range
+            if 0 <= action <= 7:
+                return int(action)
+        except Exception as e:
+            print(f"Logistic Regression prediction error: {e}")
+        
+        return None
+
+class SVMLogic(Logic):
+    """Support Vector Machine classifier logic implementation."""
+    
+    def __init__(self, csv_file: str = "training_data.csv", kernel: str = 'rbf', random_state: int = 42):
+        """
+        Initialize SVM logic with training data.
+        
+        Args:
+            csv_file: Path to training data CSV file
+            kernel: SVM kernel type
+            random_state: Random seed for reproducibility
+        """
+        self.model = SVC(
+            kernel=kernel,
+            random_state=random_state,
+            gamma='scale'
+        )
+        self._train_model(csv_file)
+    
+    def _train_model(self, csv_file: str):
+        """Train the SVM model on the provided data."""
+        try:
+            # Load training data
+            df = pd.read_csv(csv_file)
+            print(f"Loaded {len(df)} training samples from {csv_file}")
+            
+            # Prepare features: 8 sensor readings + distance_to_goal
+            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
+            X = df[feature_columns].values
+            y = df['action'].values
+            
+            # Split into train/test sets
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            # Train the model
+            self.model.fit(X_train, y_train)
+            
+            # Evaluate on test set
+            y_pred = self.model.predict(X_test)
+            accuracy = accuracy_score(y_test, y_pred)
+            print(f"SVM training completed. Test accuracy: {accuracy:.3f}")
+            
+        except FileNotFoundError:
+            print(f"Training data file {csv_file} not found. Model will not be available.")
+            self.model = None
+        except Exception as e:
+            print(f"Error training SVM model: {e}")
+            self.model = None
+    
+    def reset(self):
+        """Reset any internal state."""
+        pass
+    
+    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+        """Get next action using SVM prediction."""
+        if self.model is None:
+            return None
+            
+        # Get current sensor readings and distance
+        sensors = world.get_sensor_readings(current_position)
+        distance_to_goal = world.get_distance_to_goal(current_position)
+        
+        # Prepare input for model
+        features = np.array([sensors + [distance_to_goal]])
+        
+        # Get model prediction
+        try:
+            action = self.model.predict(features)[0]
+            
+            # Validate action is in valid range
+            if 0 <= action <= 7:
+                return int(action)
+        except Exception as e:
+            print(f"SVM prediction error: {e}")
+        
+        return None
+
+class NaiveBayesLogic(Logic):
+    """Naive Bayes classifier logic implementation."""
+    
+    def __init__(self, csv_file: str = "training_data.csv"):
+        """
+        Initialize Naive Bayes logic with training data.
+        
+        Args:
+            csv_file: Path to training data CSV file
+        """
+        self.model = GaussianNB()
+        self._train_model(csv_file)
+    
+    def _train_model(self, csv_file: str):
+        """Train the Naive Bayes model on the provided data."""
+        try:
+            # Load training data
+            df = pd.read_csv(csv_file)
+            print(f"Loaded {len(df)} training samples from {csv_file}")
+            
+            # Prepare features: 8 sensor readings + distance_to_goal
+            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
+            X = df[feature_columns].values
+            y = df['action'].values
+            
+            # Split into train/test sets
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            # Train the model
+            self.model.fit(X_train, y_train)
+            
+            # Evaluate on test set
+            y_pred = self.model.predict(X_test)
+            accuracy = accuracy_score(y_test, y_pred)
+            print(f"Naive Bayes training completed. Test accuracy: {accuracy:.3f}")
+            
+        except FileNotFoundError:
+            print(f"Training data file {csv_file} not found. Model will not be available.")
+            self.model = None
+        except Exception as e:
+            print(f"Error training Naive Bayes model: {e}")
+            self.model = None
+    
+    def reset(self):
+        """Reset any internal state."""
+        pass
+    
+    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+        """Get next action using Naive Bayes prediction."""
+        if self.model is None:
+            return None
+            
+        # Get current sensor readings and distance
+        sensors = world.get_sensor_readings(current_position)
+        distance_to_goal = world.get_distance_to_goal(current_position)
+        
+        # Prepare input for model
+        features = np.array([sensors + [distance_to_goal]])
+        
+        # Get model prediction
+        try:
+            action = self.model.predict(features)[0]
+            
+            # Validate action is in valid range
+            if 0 <= action <= 7:
+                return int(action)
+        except Exception as e:
+            print(f"Naive Bayes prediction error: {e}")
+        
+        return None
+
+class KNNLogic(Logic):
+    """K-Nearest Neighbors classifier logic implementation."""
+    
+    def __init__(self, csv_file: str = "training_data.csv", n_neighbors: int = 5):
+        """
+        Initialize KNN logic with training data.
+        
+        Args:
+            csv_file: Path to training data CSV file
+            n_neighbors: Number of neighbors to consider
+        """
+        self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
+        self._train_model(csv_file)
+    
+    def _train_model(self, csv_file: str):
+        """Train the KNN model on the provided data."""
+        try:
+            # Load training data
+            df = pd.read_csv(csv_file)
+            print(f"Loaded {len(df)} training samples from {csv_file}")
+            
+            # Prepare features: 8 sensor readings + distance_to_goal
+            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
+            X = df[feature_columns].values
+            y = df['action'].values
+            
+            # Split into train/test sets
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            # Train the model
+            self.model.fit(X_train, y_train)
+            
+            # Evaluate on test set
+            y_pred = self.model.predict(X_test)
+            accuracy = accuracy_score(y_test, y_pred)
+            print(f"KNN training completed. Test accuracy: {accuracy:.3f}")
+            
+        except FileNotFoundError:
+            print(f"Training data file {csv_file} not found. Model will not be available.")
+            self.model = None
+        except Exception as e:
+            print(f"Error training KNN model: {e}")
+            self.model = None
+    
+    def reset(self):
+        """Reset any internal state."""
+        pass
+    
+    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+        """Get next action using KNN prediction."""
+        if self.model is None:
+            return None
+            
+        # Get current sensor readings and distance
+        sensors = world.get_sensor_readings(current_position)
+        distance_to_goal = world.get_distance_to_goal(current_position)
+        
+        # Prepare input for model
+        features = np.array([sensors + [distance_to_goal]])
+        
+        # Get model prediction
+        try:
+            action = self.model.predict(features)[0]
+            
+            # Validate action is in valid range
+            if 0 <= action <= 7:
+                return int(action)
+        except Exception as e:
+            print(f"KNN prediction error: {e}")
         
         return None
 
