@@ -31,6 +31,7 @@ def main():
     # logic = NeuralNetworkLogic()     
     # logic = NeuralNetworkLogic(hidden_layer_sizes=(200, 100, 50))  # Larger network
 
+    # simulator = Simulator(logic, renderer)
     # simulator.run_simulation()
 
     
