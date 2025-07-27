@@ -51,5 +51,9 @@ plt.tight_layout()
 plt.savefig(f"{output_dir}/feature_importance.png")
 plt.close()
 
+# Save model
+import joblib
+joblib.dump(clf, f"{output_dir}/random_forest_model.pkl")
+
 print(f"✅ Classifier complete. Accuracy: {accuracy:.4f}")
 print(f"Outputs saved to: {output_dir}/")

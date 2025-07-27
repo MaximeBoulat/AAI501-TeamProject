@@ -9,7 +9,9 @@ import matplotlib.pyplot as plt
 
 # Load dataset
 df = pd.read_csv("robot_training_data.csv")
-sensor_cols = [f"sensor_{i}" for i in range(8)]
+sen
+
+sor_cols = [f"sensor_{i}" for i in range(8)]
 X = df[sensor_cols]
 y = df["action"]
 
