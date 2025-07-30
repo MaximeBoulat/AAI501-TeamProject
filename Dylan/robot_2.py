@@ -99,6 +99,19 @@ def get_action(from_pos, to_pos):
             return i
     return None
 
+def get_goal_direction_index(current, goal):
+    dx = goal[0] - current[0]
+    dy = goal[1] - current[1]
+    if dx == 0 and dy == 0:
+        return None  # At goal
+    # Normalize to unit direction
+    norm_dx = np.sign(dx)
+    norm_dy = np.sign(dy)
+    for i, (ddy, ddx) in enumerate(DIRECTIONS):
+        if (norm_dx, norm_dy) == (ddx, ddy):
+            return i
+    return None
+
 def generate_training_data(world, path, run_id, starting_timestamp):
     data = []
     timestamp = starting_timestamp
@@ -106,9 +119,9 @@ def generate_training_data(world, path, run_id, starting_timestamp):
         sensors = get_sensor_readings(world, path[i])
         action = get_action(path[i], path[i + 1])
         if action is not None:
-            # Calculate remaining Euclidean distance to goal
             remaining = np.linalg.norm(np.subtract(path[-1], path[i]))
-            data.append((timestamp, run_id, sensors, action, remaining))
+            goal_direction = get_goal_direction_index(path[i], path[-1])
+            data.append((timestamp, run_id, sensors, action, remaining, goal_direction))
             timestamp += 1
     return data, timestamp
 
@@ -173,8 +186,12 @@ for run_id in range(num_runs):
 # === Save All Runs to CSV ===
 with open("robot_training_data.csv", "w", newline="") as f:
     writer = csv.writer(f)
-    writer.writerow(["timestamp", "run_id", "sensor_0", "sensor_1", "sensor_2", "sensor_3",
-                     "sensor_4", "sensor_5", "sensor_6", "sensor_7", "action", "distance_to_goal"])
-    for timestamp, run_id, sensors, action, distance_to_goal in all_training_data:
-        writer.writerow([timestamp, run_id] + sensors + [action, distance_to_goal])
+    writer.writerow([
+        "timestamp", "run_id",
+        "sensor_0", "sensor_1", "sensor_2", "sensor_3",
+        "sensor_4", "sensor_5", "sensor_6", "sensor_7",
+        "action", "distance_to_goal", "goal_direction"
+    ])
+    for timestamp, run_id, sensors, action, distance_to_goal, goal_direction in all_training_data:
+        writer.writerow([timestamp, run_id] + sensors + [action, distance_to_goal, goal_direction])
 
