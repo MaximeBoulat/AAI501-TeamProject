@@ -3,15 +3,17 @@ import heapq
 import random
 import csv
 import os
+import math
 
-num_runs = 50
+num_runs = 10000
 WORLD_SIZE = 20
 ATTEMPTS = 100
 WALL_COUNT = 5
 WALL_MAX_LEN = 10
-OBSTALCE_PROB = 0.2
+OBSTALCE_PROB = 0.3
 MIN_START_GOAL_DISTANCE = 8
 SEED = 42
+MAX_GOAL_DISTANCE = WORLD_SIZE * math.sqrt(2)
 
 # Set random seed for built-in random module
 random.seed(SEED)
@@ -88,7 +90,7 @@ def get_sensor_readings(world, pos):
             dist += 1
             if not (0 <= x < world.shape[1] and 0 <= y < world.shape[0]) or world[y][x] == 1:
                 break
-        readings.append(dist)
+        readings.append(dist / MAX_GOAL_DISTANCE)
     return readings
 
 def get_action(from_pos, to_pos):
@@ -112,6 +114,14 @@ def get_goal_direction_index(current, goal):
             return i
     return None
 
+def get_goal_direction_radians(current, goal):
+    dx = goal[0] - current[0]
+    dy = current[1] - goal[1]  # Invert Y to make 0 point north
+
+    angle = math.atan2(dx, dy)  # dx first because 0° = north
+    angle = angle % (2 * math.pi) / (2 * math.pi) # Normalize to [0, 1)
+    return angle
+
 def generate_training_data(world, path, run_id, starting_timestamp):
     data = []
     timestamp = starting_timestamp
@@ -119,8 +129,8 @@ def generate_training_data(world, path, run_id, starting_timestamp):
         sensors = get_sensor_readings(world, path[i])
         action = get_action(path[i], path[i + 1])
         if action is not None:
-            remaining = np.linalg.norm(np.subtract(path[-1], path[i]))
-            goal_direction = get_goal_direction_index(path[i], path[-1])
+            remaining = np.linalg.norm(np.subtract(path[-1], path[i])) / MAX_GOAL_DISTANCE
+            goal_direction = get_goal_direction_radians(path[i], path[-1])
             data.append((timestamp, run_id, sensors, action, remaining, goal_direction))
             timestamp += 1
     return data, timestamp
