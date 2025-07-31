@@ -188,18 +188,24 @@ Recent large-scale environments like Habitat, Gibson, and DeepMind Lab have beco
 
 ## References
 
-- Barreto, A., Dabney, W., Munos, R., Hunt, J. J., Schaul, T., van Hasselt, H., & Silver, D. (2017). *Successor features for transfer in reinforcement learning*. In *Advances in Neural Information Processing Systems (NeurIPS), 30*.
+- Barreto, A., Dabney, W., Munos, R., Hunt, J. J., Schaul, T., van Hasselt, H., & Silver, D. (2018). *Successor features for transfer in reinforcement learning*. arXiv. https://arxiv.org/abs/1606.05312
 
-- Codevilla, F., Müller, M., López, A., Koltun, V., & Dosovitskiy, A. (2018). *End-to-end driving via conditional imitation learning*. In *2018 IEEE International Conference on Robotics and Automation (ICRA)*.
+- Codevilla, F., Santana, E., López, A. M., & Gaidon, A. (2019). *Exploring the limitations of behavior cloning for autonomous driving*. arXiv. https://arxiv.org/abs/1904.08980
 
-- Hausknecht, M., & Stone, P. (2015). *Deep recurrent Q-learning for partially observable MDPs*. In *Proceedings of the AAAI Fall Symposium on Sequential Decision Making for Intelligent Agents*.
+- Delgado, K. V., de Barros, L. N., Dias, D. B., & Sanner, S. (2016). *Real-time dynamic programming for Markov decision processes with imprecise probabilities*. *Artificial Intelligence, 230*, 192-223. https://doi.org/10.1016/j.artint.2015.09.005
 
-- Kaelbling, L. P., Littman, M. L., & Cassandra, A. R. (1998). *Planning and acting in partially observable stochastic domains*. *Artificial Intelligence, 101*(1-2), 99-134.
+- Hausknecht, M. J., & Stone, P. (2015). *Deep recurrent Q-learning for partially observable MDPs*. arXiv. http://arxiv.org/abs/1507.06527
 
-- Parisotto, E., & Salakhutdinov, R. (2018). *Neural Map: Structured memory for deep reinforcement learning*. In *International Conference on Learning Representations (ICLR)*.
+- Mathieu, M., Ozair, S., Srinivasan, S., Gulcehre, C., Zhang, S., Jiang, R., Le Paine, T., Powell, R., Żołna, K., Schrittwieser, J., Choi, D., Georgiev, P., Toyama, D., Huang, A., Ring, R., Babuschkin, I., Ewalds, T., Bordbar, M., Henderson, S., Gómez Colmenarejo, S., van den Oord, A., Czarnecki, W. M., de Freitas, N., & Vinyals, O. (2023). *AlphaStar Unplugged: Large-scale offline reinforcement learning*. arXiv. https://arxiv.org/abs/2308.03526
 
-- Pomerleau, D. A. (1989). *ALVINN: An autonomous land vehicle in a neural network*. In *Advances in Neural Information Processing Systems, 1*.
+- Parisotto, E., & Salakhutdinov, R. (2017). *Neural Map: Structured memory for deep reinforcement learning*. arXiv. https://arxiv.org/abs/1702.08360
 
-- Ross, S., Gordon, G. J., & Bagnell, D. (2011). *A reduction of imitation learning and structured prediction to no-regret online learning*. In *Proceedings of the 14th International Conference on Artificial Intelligence and Statistics (AISTATS)*.
+- Petrović, L. (2018). *Motion planning in high-dimensional spaces*. arXiv. https://arxiv.org/abs/1806.07457
 
-- Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2016). *Value iteration networks*. In *Advances in Neural Information Processing Systems (NeurIPS), 29*.
+- Pomerleau, D. A. (1988). *ALVINN: An autonomous land vehicle in a neural network*. In D. Touretzky (Ed.), *Advances in Neural Information Processing Systems* (Vol. 1). Morgan Kaufmann. https://proceedings.neurips.cc/paper_files/paper/1988/file/812b4ba287f5ee0bc9d43bbf5bbe87fb-Paper.pdf
+
+- Ross, S., Gordon, G. J., & Bagnell, J. A. (2011). *A reduction of imitation learning and structured prediction to no-regret online learning*. arXiv. https://arxiv.org/abs/1011.0686
+
+- Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2017). *Value iteration networks*. arXiv. https://arxiv.org/abs/1602.02867
+
+- Xia, F., Li, C., Chen, K., Shen, W. B., Martín-Martín, R., Hirose, N., Zamir, A. R., Fei-Fei, L., & Savarese, S. (2019, June 16). *Gibson Env V2: Embodied simulation environments for interactive navigation* (Tech. Rep.). Stanford University. http://svl.stanford.edu/gibson2
