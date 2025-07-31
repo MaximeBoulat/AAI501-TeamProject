@@ -62,7 +62,7 @@ The problem severity can be quantified by: (1) grouping training samples by sens
 Standard ML requires consistent labeling - identical inputs should produce identical outputs. The shifting signals create systematic contradictions where equally valid examples have opposite labels. The model cannot converge to consistent decision boundaries because the training data contains contradictory examples that are mathematically impossible to resolve without additional information.
 
 ##### Performance Impact
-The observed 30-40% accuracy ceiling likely reflects this contradiction. The model learns to predict the most frequent action for each sensor configuration but cannot exceed this threshold because conflicting examples prevent higher accuracy. This suggests the data generation approach requires fundamental revision rather than feature engineering solutions.
+The initial 30-40% accuracy ceiling likely reflected this contradiction. The model learned to predict the most frequent action for each sensor configuration but could exceed this threshold because conflicting examples prevented higher accuracy. This suggests the data generation approach required fundamental revision rather than feature engineering solutions.
 
 #### Density and shape of obstacles
 
@@ -198,7 +198,7 @@ Recent large-scale environments like Habitat, Gibson, and DeepMind Lab have beco
 
 - Hausknecht, M. J., & Stone, P. (2015). *Deep recurrent Q-learning for partially observable MDPs*. arXiv. http://arxiv.org/abs/1507.06527
 
-- Mathieu, M., Ozair, S., Srinivasan, S., Gulcehre, C., Zhang, S., Jiang, R., Le Paine, T., Powell, R., Żołna, K., Schrittwieser, J., Choi, D., Georgiev, P., Toyama, D., Huang, A., Ring, R., Babuschkin, I., Ewalds, T., Bordbar, M., Henderson, S., Gómez Colmenarejo, S., van den Oord, A., Czarnecki, W. M., de Freitas, N., & Vinyals, O. (2023). *AlphaStar Unplugged: Large-scale offline reinforcement learning*. arXiv. https://arxiv.org/abs/2308.03526
+- Mathieu, M., Ozair, S., Srinivasan, S., Gulcehre, C., Zhang, S., Jiang, R., Le Paine, T., Powell, R., Żołna, K., Schrittwieser, J., Choi, D., Georgiev, P., Toyama, D., Huang, A., Ring, R., Babuschkin, I., Ewalds, T., Bordbar, M., Henderson, S., ... Vinyals, O. (2023). *AlphaStar Unplugged: Large-scale offline reinforcement learning*. arXiv. https://arxiv.org/abs/2308.03526
 
 - Parisotto, E., & Salakhutdinov, R. (2017). *Neural Map: Structured memory for deep reinforcement learning*. arXiv. https://arxiv.org/abs/1702.08360
 
