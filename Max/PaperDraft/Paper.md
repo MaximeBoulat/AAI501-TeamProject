@@ -18,7 +18,9 @@ Any problems that involve pathfinding in a dynamic environment such as:
 
 In order to simplify the problem space and make it easier to digest, we used a 2D tile based map where tiles can either be empty or obstructed to represent the world.
 
-The agent can move in 8 directions and captures sensor readings in the 8 directions. Sensor readings contain the distance to the nearest obstacle in the direction of the sensor.
+The agent can move in 8 directions and captures sensor readings in the 8 directions. Sensor readings contain the distance between the agent and the nearest obstacle in that direction, in tiles.
+
+The agent also captures the distance to the goal (eucledian) and the direction to the goal (in radians, normalized).
 
 ### Expert system (A*) as the source of truth
 
