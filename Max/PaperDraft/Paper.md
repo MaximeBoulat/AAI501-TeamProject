@@ -146,7 +146,7 @@ Single-step classifiers are fundamentally limited in navigation tasks that invol
 
 Models trained solely on local data struggle to emulate global planners like A*. Tamar et al. (2016) addressed this with Value Iteration Networks (VINs), which incorporate differentiable planning modules into neural networks. VINs are capable of learning approximate planning behavior using only local information.
 
-More recent work like Neural Map (Parisotto & Salakhutdinov, 2018) introduced external spatial memory structures to allow agents to build internal maps of unseen environments, again targeting the same problem you're facing: reconciling local observations with long-term planning objectives.
+More recent work like Neural Map (Parisotto & Salakhutdinov, 2018) introduced external spatial memory structures to allow agents to build internal maps of unseen environments, again targeting the same problem: reconciling local observations with long-term planning objectives.
 
 ### Empirical Failures and Metric Misalignment
 
@@ -156,7 +156,7 @@ These studies advocate for task-level evaluation metrics like goal success rate,
 
 ### Practical Simulation Frameworks and Scaling
 
-Recent large-scale environments like Habitat, Gibson, and DeepMind Lab have become benchmarks for training and evaluating policies in partially observable 3D environments. These frameworks standardize sensor modeling, goal-directed navigation, and task completion metrics—areas you touch on with your emphasis on sensor range and entropy of sensor configurations.
+Recent large-scale environments like Habitat, Gibson, and DeepMind Lab have become benchmarks for training and evaluating policies in partially observable 3D environments. These frameworks standardize sensor modeling, goal-directed navigation, and task completion metrics.
 
 ## Model selection
 
