@@ -68,11 +68,17 @@ def log_model_results(model_type: str, accuracy: float, results_file: str = "mod
 class Logic(ABC):
     """Abstract base class for agent logic/strategy implementations."""
     
+    def __init__(self):
+        """Initialize logic with loop detection."""
+        self.position_history = []
+        self.max_history_length = 10  # Track last 10 positions
+        self.loop_detection_threshold = 3  # Consider loop if position visited 3+ times recently
         
     @abstractmethod
     def reset(self):
         """Reset any internal state for a new run."""
-        pass
+        # Clear position history when resetting
+        self.position_history = []
         
     def _get_action_for_move(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int]) -> int:
         """Convert position move to action number (0-7)."""
@@ -85,6 +91,30 @@ class Logic(ABC):
         
         return -1  # Invalid move
     
+    def _detect_loop(self, current_position: Tuple[int, int]) -> bool:
+        """
+        Detect if the agent is stuck in a loop by checking recent position history.
+        
+        Args:
+            current_position: The current position to check
+            
+        Returns:
+            True if a loop is detected, False otherwise
+        """
+        # Count how many times current position appears in recent history
+        recent_visits = self.position_history[-8:] if len(self.position_history) >= 8 else self.position_history
+        position_count = recent_visits.count(current_position)
+        
+        # If we've been to this position multiple times recently, it's likely a loop
+        return position_count >= self.loop_detection_threshold
+    
+    def _update_position_history(self, position: Tuple[int, int]):
+        """Update the position history for loop detection."""
+        self.position_history.append(position)
+        
+        # Keep only the most recent positions
+        if len(self.position_history) > self.max_history_length:
+            self.position_history = self.position_history[-self.max_history_length:]
 
     def _train_model(self, csv_file: str, model_type: str):
         """Train the model on the provided data."""
@@ -120,7 +150,15 @@ class Logic(ABC):
             self.model = None
     
     def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using model prediction."""
+        """Get next action using model prediction with loop detection."""
+        # Check for loop before making any action decision
+        if self._detect_loop(current_position):
+            print(f"Loop detected at position {current_position}. Returning invalid action.")
+            return None
+        
+        # Update position history for loop detection
+        self._update_position_history(current_position)
+        
         if self.model is None:
             return None
             
@@ -150,11 +188,13 @@ class AStarLogic(Logic):
     
     def __init__(self):
         """Initialize A* logic."""
+        super().__init__()  # Initialize loop detection
         self.full_path = []
         self.current_step = 0
         
     def reset(self):
         """Reset internal state for new run."""
+        super().reset()  # Reset loop detection
         self.full_path = []
         self.current_step = 0
     
@@ -199,6 +239,37 @@ class AStarLogic(Logic):
     def get_full_path(self, world: World, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
         """Get complete A* path for visualization or analysis."""
         return self._compute_astar_path(world, start, goal)
+    
+    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+        """Get next action using A* pathfinding with loop detection."""
+        # Check for loop before making any action decision
+        if self._detect_loop(current_position):
+            print(f"Loop detected at position {current_position}. Returning invalid action.")
+            return None
+        
+        # Update position history for loop detection
+        self._update_position_history(current_position)
+        
+        # Compute or use cached path
+        if not self.full_path or self.current_step >= len(self.full_path):
+            # Compute new path from current position to goal
+            self.full_path = self._compute_astar_path(world, current_position, world.goal)
+            self.current_step = 0
+            
+            # If no path found, return invalid action
+            if not self.full_path:
+                return None
+        
+        # Get next position in path
+        if self.current_step + 1 < len(self.full_path):
+            next_position = self.full_path[self.current_step + 1]
+            action = self._get_action_for_move(current_position, next_position)
+            self.current_step += 1
+            
+            if action != -1:
+                return action
+        
+        return None
 
 class RandomForestLogic(Logic):
     """Random Forest classifier logic implementation."""
@@ -212,12 +283,13 @@ class RandomForestLogic(Logic):
             n_estimators: Number of trees in the forest
             random_state: Random seed for reproducibility
         """
+        super().__init__()  # Initialize loop detection
         self.model = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
         self._train_model(csv_file, "RandomForest")
 
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
     
 
@@ -232,6 +304,7 @@ class LogisticRegressionLogic(Logic):
             csv_file: Path to training data CSV file
             random_state: Random seed for reproducibility
         """
+        super().__init__()  # Initialize loop detection
         self.model = LogisticRegression(
             multi_class='multinomial',
             solver='lbfgs',
@@ -242,7 +315,7 @@ class LogisticRegressionLogic(Logic):
    
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
 
 class SVMLogic(Logic):
@@ -257,6 +330,7 @@ class SVMLogic(Logic):
             kernel: SVM kernel type
             random_state: Random seed for reproducibility
         """
+        super().__init__()  # Initialize loop detection
         self.model = SVC(
             kernel=kernel,
             random_state=random_state,
@@ -266,7 +340,7 @@ class SVMLogic(Logic):
  
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
 
 class NaiveBayesLogic(Logic):
     """Naive Bayes classifier logic implementation."""
@@ -278,12 +352,13 @@ class NaiveBayesLogic(Logic):
         Args:
             csv_file: Path to training data CSV file
         """
+        super().__init__()  # Initialize loop detection
         self.model = GaussianNB()
         self._train_model(csv_file, "NaiveBayes")
    
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
       
 
@@ -298,12 +373,13 @@ class KNNLogic(Logic):
             csv_file: Path to training data CSV file
             n_neighbors: Number of neighbors to consider
         """
+        super().__init__()  # Initialize loop detection
         self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
         self._train_model(csv_file, "KNN")
    
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
        
 
@@ -319,6 +395,7 @@ class XGBoostLogic(Logic):
             n_estimators: Number of boosting rounds
             random_state: Random seed for reproducibility
         """
+        super().__init__()  # Initialize loop detection
         try:
             import xgboost as xgb
             self.model = xgb.XGBClassifier(
@@ -337,7 +414,7 @@ class XGBoostLogic(Logic):
 
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
        
 
@@ -355,6 +432,7 @@ class NeuralNetworkLogic(Logic):
             random_state: Random seed for reproducibility
             max_iter: Maximum number of iterations
         """
+        super().__init__()  # Initialize loop detection
         self.model = MLPClassifier(
             hidden_layer_sizes=hidden_layer_sizes,
             random_state=random_state,
@@ -365,5 +443,5 @@ class NeuralNetworkLogic(Logic):
 
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     

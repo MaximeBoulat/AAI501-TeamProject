@@ -33,8 +33,9 @@ def main():
 
     simulator = Simulator(logic, renderer)
 
-    # simulator.generate_training_data(num_runs=3000)
-    simulator.run_simulation()
+    # simulator.run_multiple(num_runs=3000, collect_data=True, slow=False)
+    simulator.run_multiple(num_runs=100, collect_data=False, slow=True)
+    # simulator.run_simulation()
     
 
     
