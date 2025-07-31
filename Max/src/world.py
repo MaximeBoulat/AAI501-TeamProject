@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from typing import Tuple, List
+import math
 
 class World:
     """Manages a 2D grid world with obstacles, start and goal positions."""
@@ -17,7 +18,7 @@ class World:
         
     @classmethod
     def from_random(cls, size: int = 20, obstacle_prob: float = 0.2, 
-                   wall_count: int = 5, max_wall_length: int = 10, 
+                   wall_count: int = 10, max_wall_length: int = 10, 
                    min_start_goal_distance: int = 8, seed: int = None):
         """Create a random world with obstacles and walls."""
         if seed is not None:
@@ -108,6 +109,15 @@ class World:
     def get_distance_to_goal(self, position: Tuple[int, int]) -> float:
         """Get Euclidean distance from position to goal."""
         return np.linalg.norm(np.subtract(self.goal, position))
+    
+    def get_goal_direction_radians(self, position: Tuple[int, int]) -> float:
+        """Get angle in radians from position to goal."""
+        dx = self.goal[0] - position[0]
+        dy = position[1] - self.goal[1]
+        angle = math.atan2(dx, dy)  # dx first because 0° = north
+        angle = angle % (2 * math.pi) / (2 * math.pi) # Normalize to [0, 1)
+        return angle
+
     
     def get_neighbors(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
         """Get all valid neighboring positions."""

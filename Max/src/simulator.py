@@ -146,7 +146,7 @@ class Simulator:
         
         fieldnames = ['timestamp', 'run_id', 'position_x', 'position_y'] + \
                     [f'sensor_{i}' for i in range(8)] + \
-                    ['action', 'distance_to_goal', 'path_length']
+                    ['action', 'distance_to_goal', 'path_length', 'goal_direction']
         
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -161,7 +161,8 @@ class Simulator:
                     'position_y': data['position'][1],
                     'action': data['action'],
                     'distance_to_goal': data['distance_to_goal'],
-                    'path_length': data['path_length']
+                    'path_length': data['path_length'],
+                    'goal_direction': data['goal_direction']
                 }
                 
                 # Add sensor readings
