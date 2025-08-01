@@ -1,0 +1,7 @@
+node_modules
+**/.DS_Store
+*.sqlite
+dist
+.cursorrules
+__pycache__/
+*.pyc
