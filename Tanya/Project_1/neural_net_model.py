@@ -12,8 +12,9 @@ from tensorflow.keras.utils import plot_model
 
 # Load dataset
 df = pd.read_csv("robot_training_data.csv")
-sensor_cols = [f"sensor_{i}" for i in range(8)]
-X = df[sensor_cols]
+#sensor_cols = [f"sensor_{i}" for i in range(8)]
+exclude_cols = ["timestamp", "run_id", "action"]
+X = df[[col for col in df.columns if col not in exclude_cols]]
 y = df["action"]
 
 # Train-test split
@@ -26,7 +27,7 @@ X_test_scaled = scaler.transform(X_test)
 
 # Build neural network
 model = Sequential([
-    Dense(64, activation='relu', input_shape=(8,)),
+    Dense(64, activation='relu', input_shape=(10,)),
     Dense(32, activation='relu'),
     Dense(8, activation='softmax')
 ])
