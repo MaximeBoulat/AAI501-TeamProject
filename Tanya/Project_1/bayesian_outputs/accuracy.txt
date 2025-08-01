@@ -1,1 +1,1 @@
-Naive Bayes Accuracy: 0.3651
+Naive Bayes Accuracy: 0.3237

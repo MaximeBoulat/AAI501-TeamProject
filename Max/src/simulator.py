@@ -75,7 +75,7 @@ class Simulator:
                 
                 # Wait for next tick (1 second)
                 if slow:
-                    time.sleep(1.0)   
+                    time.sleep(0.1)   
             
             # Check final state
             results['success'] = self.agent.is_at_goal()
@@ -95,7 +95,7 @@ class Simulator:
         
         return results
     
-    def generate_training_data(self, num_runs: int) -> List[Dict[str, Any]]:
+    def run_multiple(self, num_runs: int, collect_data: bool = False, slow: bool = True) -> List[Dict[str, Any]]:
         """
         Run multiple simulations with different random worlds.
         
@@ -122,7 +122,7 @@ class Simulator:
                 continue
             
             # Run simulation
-            results = self.run_simulation(run_id=run_id, collect_data=True, slow=False)
+            results = self.run_simulation(run_id=run_id, collect_data=True, slow=slow)
             all_results.append(results)
             
             # Collect training data
@@ -134,7 +134,7 @@ class Simulator:
                   f"final distance: {results['final_distance']:.2f}")
         
         # Save training data if any was collected
-        if all_training_data:
+        if all_training_data and collect_data:
             self.save_training_data(all_training_data)
         
         return all_results
@@ -146,7 +146,7 @@ class Simulator:
         
         fieldnames = ['timestamp', 'run_id', 'position_x', 'position_y'] + \
                     [f'sensor_{i}' for i in range(8)] + \
-                    ['action', 'distance_to_goal', 'path_length']
+                    ['action', 'distance_to_goal', 'path_length', 'goal_direction']
         
         with open(filename, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -161,7 +161,8 @@ class Simulator:
                     'position_y': data['position'][1],
                     'action': data['action'],
                     'distance_to_goal': data['distance_to_goal'],
-                    'path_length': data['path_length']
+                    'path_length': data['path_length'],
+                    'goal_direction': data['goal_direction']
                 }
                 
                 # Add sensor readings

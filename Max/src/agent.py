@@ -82,5 +82,6 @@ class Agent:
             'position': self.position,
             'sensors': self.get_current_sensors(),
             'distance_to_goal': self.get_distance_to_goal(),
-            'path_length': len(self.path_history) - 1  # Exclude starting position
+            'path_length': len(self.path_history) - 1,  # Exclude starting position
+            'goal_direction': self.world.get_goal_direction_radians(self.position)
         } 

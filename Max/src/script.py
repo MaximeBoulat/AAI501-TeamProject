@@ -18,31 +18,25 @@ from simulator import Simulator
 
 def main():
 
-    # Step 1: Pick a renderer
-
-    # renderer = ConsoleRenderer()
     renderer = PygameRenderer(cell_size=30, show_path_history=True, window_title="Robot Navigation")
-
-
-    # Step 2: Generate training data
-
-    logic = AStarLogic()
-    simulator = Simulator(logic, renderer)
-    simulator.generate_training_data(num_runs=100)
-
-    # Step 3: Train a model and run it
 
     # logic = RandomForestLogic()
     # logic = XGBoostLogic()   
     # logic = LogisticRegressionLogic()
-    logic = SVMLogic()
+    # logic = SVMLogic()
     # logic = NaiveBayesLogic()
     # logic = KNNLogic()
-    # logic = NeuralNetworkLogic()  
+    logic = NeuralNetworkLogic()  
     # logic = NeuralNetworkLogic(hidden_layer_sizes=(200, 100, 50))  # Larger network
 
+    # logic = AStarLogic()
+
     simulator = Simulator(logic, renderer)
-    simulator.run_simulation()
+
+    # simulator.run_multiple(num_runs=3000, collect_data=True, slow=False)
+    simulator.run_multiple(num_runs=100, collect_data=False, slow=True)
+    # simulator.run_simulation()
+    
 
     
     return 0
