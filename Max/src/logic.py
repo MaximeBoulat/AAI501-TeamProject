@@ -3,6 +3,7 @@ from typing import Tuple, List, Optional
 import heapq
 import numpy as np
 import pandas as pd
+import os
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.linear_model import LogisticRegression
@@ -15,25 +16,69 @@ from world import World
 
 # XGBoost import handled in XGBoostLogic class due to potential library issues
 
+# Data schema version for tracking
+
+# 1.0: sample size 100
+# 1.1: sample size 3000
+# 2.0: sample size 3000, goal direction added
+
+DATA_SCHEMA_VERSION = "2.0"
+
+def log_model_results(model_type: str, accuracy: float, results_file: str = "model_results.csv"):
+    """
+    Log model results to CSV file. Overwrites existing row if model_type and schema version match.
+    
+    Args:
+        model_type: Name of the model type
+        accuracy: Test accuracy score
+        results_file: Path to results CSV file
+    """
+    try:
+        
+        # Check if results file exists
+        if os.path.exists(results_file):
+            df = pd.read_csv(results_file)
+        else:
+            df = pd.DataFrame(columns=['model_type', 'data_schema_version', 'accuracy'])
+        
+        # Remove any existing rows with the same model_type and schema version
+        # Convert data_schema_version to string to ensure type consistency
+        df['data_schema_version'] = df['data_schema_version'].astype(str)
+        mask = (df['model_type'] == model_type) & (df['data_schema_version'] == DATA_SCHEMA_VERSION)
+       
+        df = df[~mask]
+        
+        # Add new row
+        new_row = pd.DataFrame({
+            'model_type': [model_type],
+            'data_schema_version': [DATA_SCHEMA_VERSION],
+            'accuracy': [round(accuracy, 3)]
+        })
+        
+        df = pd.concat([df, new_row], ignore_index=True)
+        
+        # Save to CSV
+        df.to_csv(results_file, index=False)
+        
+    except Exception as e:
+        print(f"Error logging results for {model_type}: {e}")
+        import traceback
+        traceback.print_exc()
+
 class Logic(ABC):
     """Abstract base class for agent logic/strategy implementations."""
     
-    @abstractmethod
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """
-        Get the next action for the agent to take.
-        Args:
-            current_position: Agent's current position
-            world: World containing goal and obstacles
-        Returns:
-            action number (0-7) or None if no valid action.
-        """
-        pass
+    def __init__(self):
+        """Initialize logic with loop detection."""
+        self.position_history = []
+        self.max_history_length = 10  # Track last 10 positions
+        self.loop_detection_threshold = 3  # Consider loop if position visited 3+ times recently
         
     @abstractmethod
     def reset(self):
         """Reset any internal state for a new run."""
-        pass
+        # Clear position history when resetting
+        self.position_history = []
         
     def _get_action_for_move(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int]) -> int:
         """Convert position move to action number (0-7)."""
@@ -45,32 +90,115 @@ class Logic(ABC):
                 return i
         
         return -1  # Invalid move
+    
+    def _detect_loop(self, current_position: Tuple[int, int]) -> bool:
+        """
+        Detect if the agent is stuck in a loop by checking recent position history.
+        
+        Args:
+            current_position: The current position to check
+            
+        Returns:
+            True if a loop is detected, False otherwise
+        """
+        # Count how many times current position appears in recent history
+        recent_visits = self.position_history[-8:] if len(self.position_history) >= 8 else self.position_history
+        position_count = recent_visits.count(current_position)
+        
+        # If we've been to this position multiple times recently, it's likely a loop
+        return position_count >= self.loop_detection_threshold
+    
+    def _update_position_history(self, position: Tuple[int, int]):
+        """Update the position history for loop detection."""
+        self.position_history.append(position)
+        
+        # Keep only the most recent positions
+        if len(self.position_history) > self.max_history_length:
+            self.position_history = self.position_history[-self.max_history_length:]
+
+    def _train_model(self, csv_file: str, model_type: str):
+        """Train the model on the provided data."""
+        try:
+            # Load training data
+            df = pd.read_csv(csv_file)
+            print(f"Loaded {len(df)} training samples from {csv_file}")
+            
+            # Prepare features: 8 sensor readings + distance_to_goal
+            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal', 'goal_direction']
+            X = df[feature_columns].values
+            y = df['action'].values
+            
+            # Split into train/test sets
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+            
+            # Train the model
+            self.model.fit(X_train, y_train)
+            
+            # Evaluate on test set
+            y_pred = self.model.predict(X_test)
+            accuracy = accuracy_score(y_test, y_pred)
+            print(f"{model_type} training completed. Test accuracy: {accuracy:.3f}")
+            
+            # Log results
+            log_model_results(model_type, accuracy)
+            
+        except FileNotFoundError:
+            print(f"Training data file {csv_file} not found. Model will not be available.")
+            self.model = None
+        except Exception as e:
+            print(f"Error training SVM model: {e}")
+            self.model = None
+    
+    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+        """Get next action using model prediction with loop detection."""
+        # Check for loop before making any action decision
+        if self._detect_loop(current_position):
+            print(f"Loop detected at position {current_position}. Returning invalid action.")
+            return None
+        
+        # Update position history for loop detection
+        self._update_position_history(current_position)
+        
+        if self.model is None:
+            return None
+            
+        # Get current sensor readings and distance
+        sensors = world.get_sensor_readings(current_position)
+        distance_to_goal = world.get_distance_to_goal(current_position)
+        goal_direction = world.get_goal_direction_radians(current_position)
+        
+        # Prepare input for model
+        features = np.array([sensors + [distance_to_goal, goal_direction]])
+        
+        # Get model prediction
+        try:
+            action = self.model.predict(features)[0]
+            
+            # Validate action is in valid range
+            if 0 <= action <= 7:
+                return int(action)
+        except Exception as e:
+            print(f"prediction error: {e}")
+        
+        return None
+
 
 class AStarLogic(Logic):
     """A* pathfinding logic implementation."""
     
     def __init__(self):
         """Initialize A* logic."""
+        super().__init__()  # Initialize loop detection
         self.full_path = []
         self.current_step = 0
         
     def reset(self):
         """Reset internal state for new run."""
+        super().reset()  # Reset loop detection
         self.full_path = []
         self.current_step = 0
     
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using A* pathfinding."""
-        path = self._compute_astar_path(world, current_position, world.goal)
-        
-        if len(path) >= 2:
-            from_pos = path[0]
-            to_pos = path[1]
-            return self._get_action_for_move(from_pos, to_pos)
-        
-        return None
-    
-    
+
     def _compute_astar_path(self, world: World, start: Tuple[int, int], 
                            goal: Tuple[int, int]) -> List[Tuple[int, int]]:
         """Compute A* path from start to goal."""
@@ -111,6 +239,37 @@ class AStarLogic(Logic):
     def get_full_path(self, world: World, start: Tuple[int, int], goal: Tuple[int, int]) -> List[Tuple[int, int]]:
         """Get complete A* path for visualization or analysis."""
         return self._compute_astar_path(world, start, goal)
+    
+    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+        """Get next action using A* pathfinding with loop detection."""
+        # Check for loop before making any action decision
+        if self._detect_loop(current_position):
+            print(f"Loop detected at position {current_position}. Returning invalid action.")
+            return None
+        
+        # Update position history for loop detection
+        self._update_position_history(current_position)
+        
+        # Compute or use cached path
+        if not self.full_path or self.current_step >= len(self.full_path):
+            # Compute new path from current position to goal
+            self.full_path = self._compute_astar_path(world, current_position, world.goal)
+            self.current_step = 0
+            
+            # If no path found, return invalid action
+            if not self.full_path:
+                return None
+        
+        # Get next position in path
+        if self.current_step + 1 < len(self.full_path):
+            next_position = self.full_path[self.current_step + 1]
+            action = self._get_action_for_move(current_position, next_position)
+            self.current_step += 1
+            
+            if action != -1:
+                return action
+        
+        return None
 
 class RandomForestLogic(Logic):
     """Random Forest classifier logic implementation."""
@@ -124,69 +283,15 @@ class RandomForestLogic(Logic):
             n_estimators: Number of trees in the forest
             random_state: Random seed for reproducibility
         """
+        super().__init__()  # Initialize loop detection
         self.model = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
-        self._train_model(csv_file)
-    
-    def _train_model(self, csv_file: str):
-        """Train the Random Forest model on the provided data."""
-        try:
-            # Load training data
-            df = pd.read_csv(csv_file)
-            print(f"Loaded {len(df)} training samples from {csv_file}")
- 
-            # count rows
-            print(f"Number of rows: {len(df)}")
-            
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
-            # Split into train/test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train the model
-            self.model.fit(X_train, y_train)
-            
-            # Evaluate on test set
-            y_pred = self.model.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            print(f"Random Forest training completed. Test accuracy: {accuracy:.3f}")
-            
-        except FileNotFoundError:
-            print(f"Training data file {csv_file} not found. Model will not be available.")
-            self.model = None
-        except Exception as e:
-            print(f"Error training Random Forest model: {e}")
-            self.model = None
-    
+        self._train_model(csv_file, "RandomForest")
+
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using Random Forest prediction."""
-        if self.model is None:
-            return None
-            
-        # Get current sensor readings and distance
-        sensors = world.get_sensor_readings(current_position)
-        distance_to_goal = world.get_distance_to_goal(current_position)
-        
-        # Prepare input for model
-        features = np.array([sensors + [distance_to_goal]])
-        
-        # Get model prediction
-        try:
-            action = self.model.predict(features)[0]
-            
-            # Validate action is in valid range
-            if 0 <= action <= 7:
-                return int(action)
-        except Exception as e:
-            print(f"Random Forest prediction error: {e}")
-        
-        return None
+    
 
 class LogisticRegressionLogic(Logic):
     """Multinomial Logistic Regression classifier logic implementation."""
@@ -199,71 +304,19 @@ class LogisticRegressionLogic(Logic):
             csv_file: Path to training data CSV file
             random_state: Random seed for reproducibility
         """
+        super().__init__()  # Initialize loop detection
         self.model = LogisticRegression(
             multi_class='multinomial',
             solver='lbfgs',
             random_state=random_state,
             max_iter=1000
         )
-        self._train_model(csv_file)
-    
-    def _train_model(self, csv_file: str):
-        """Train the Logistic Regression model on the provided data."""
-        try:
-            # Load training data
-            df = pd.read_csv(csv_file)
-            print(f"Loaded {len(df)} training samples from {csv_file}")
-            
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
-            # Split into train/test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train the model
-            self.model.fit(X_train, y_train)
-            
-            # Evaluate on test set
-            y_pred = self.model.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            print(f"Logistic Regression training completed. Test accuracy: {accuracy:.3f}")
-            
-        except FileNotFoundError:
-            print(f"Training data file {csv_file} not found. Model will not be available.")
-            self.model = None
-        except Exception as e:
-            print(f"Error training Logistic Regression model: {e}")
-            self.model = None
-    
+        self._train_model(csv_file, "LogisticRegression")
+   
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using Logistic Regression prediction."""
-        if self.model is None:
-            return None
-            
-        # Get current sensor readings and distance
-        sensors = world.get_sensor_readings(current_position)
-        distance_to_goal = world.get_distance_to_goal(current_position)
-        
-        # Prepare input for model
-        features = np.array([sensors + [distance_to_goal]])
-        
-        # Get model prediction
-        try:
-            action = self.model.predict(features)[0]
-            
-            # Validate action is in valid range
-            if 0 <= action <= 7:
-                return int(action)
-        except Exception as e:
-            print(f"Logistic Regression prediction error: {e}")
-        
-        return None
 
 class SVMLogic(Logic):
     """Support Vector Machine classifier logic implementation."""
@@ -277,70 +330,17 @@ class SVMLogic(Logic):
             kernel: SVM kernel type
             random_state: Random seed for reproducibility
         """
+        super().__init__()  # Initialize loop detection
         self.model = SVC(
             kernel=kernel,
             random_state=random_state,
             gamma='scale'
         )
-        self._train_model(csv_file)
-    
-    def _train_model(self, csv_file: str):
-        """Train the SVM model on the provided data."""
-        try:
-            # Load training data
-            df = pd.read_csv(csv_file)
-            print(f"Loaded {len(df)} training samples from {csv_file}")
-            
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
-            # Split into train/test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train the model
-            self.model.fit(X_train, y_train)
-            
-            # Evaluate on test set
-            y_pred = self.model.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            print(f"SVM training completed. Test accuracy: {accuracy:.3f}")
-            
-        except FileNotFoundError:
-            print(f"Training data file {csv_file} not found. Model will not be available.")
-            self.model = None
-        except Exception as e:
-            print(f"Error training SVM model: {e}")
-            self.model = None
-    
+        self._train_model(csv_file, "SVM")
+ 
     def reset(self):
         """Reset any internal state."""
-        pass
-    
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using SVM prediction."""
-        if self.model is None:
-            return None
-            
-        # Get current sensor readings and distance
-        sensors = world.get_sensor_readings(current_position)
-        distance_to_goal = world.get_distance_to_goal(current_position)
-        
-        # Prepare input for model
-        features = np.array([sensors + [distance_to_goal]])
-        
-        # Get model prediction
-        try:
-            action = self.model.predict(features)[0]
-            
-            # Validate action is in valid range
-            if 0 <= action <= 7:
-                return int(action)
-        except Exception as e:
-            print(f"SVM prediction error: {e}")
-        
-        return None
+        super().reset()  # Reset loop detection
 
 class NaiveBayesLogic(Logic):
     """Naive Bayes classifier logic implementation."""
@@ -352,66 +352,15 @@ class NaiveBayesLogic(Logic):
         Args:
             csv_file: Path to training data CSV file
         """
+        super().__init__()  # Initialize loop detection
         self.model = GaussianNB()
-        self._train_model(csv_file)
-    
-    def _train_model(self, csv_file: str):
-        """Train the Naive Bayes model on the provided data."""
-        try:
-            # Load training data
-            df = pd.read_csv(csv_file)
-            print(f"Loaded {len(df)} training samples from {csv_file}")
-            
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
-            # Split into train/test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train the model
-            self.model.fit(X_train, y_train)
-            
-            # Evaluate on test set
-            y_pred = self.model.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            print(f"Naive Bayes training completed. Test accuracy: {accuracy:.3f}")
-            
-        except FileNotFoundError:
-            print(f"Training data file {csv_file} not found. Model will not be available.")
-            self.model = None
-        except Exception as e:
-            print(f"Error training Naive Bayes model: {e}")
-            self.model = None
-    
+        self._train_model(csv_file, "NaiveBayes")
+   
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using Naive Bayes prediction."""
-        if self.model is None:
-            return None
-            
-        # Get current sensor readings and distance
-        sensors = world.get_sensor_readings(current_position)
-        distance_to_goal = world.get_distance_to_goal(current_position)
-        
-        # Prepare input for model
-        features = np.array([sensors + [distance_to_goal]])
-        
-        # Get model prediction
-        try:
-            action = self.model.predict(features)[0]
-            
-            # Validate action is in valid range
-            if 0 <= action <= 7:
-                return int(action)
-        except Exception as e:
-            print(f"Naive Bayes prediction error: {e}")
-        
-        return None
+      
 
 class KNNLogic(Logic):
     """K-Nearest Neighbors classifier logic implementation."""
@@ -424,66 +373,15 @@ class KNNLogic(Logic):
             csv_file: Path to training data CSV file
             n_neighbors: Number of neighbors to consider
         """
+        super().__init__()  # Initialize loop detection
         self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
-        self._train_model(csv_file)
-    
-    def _train_model(self, csv_file: str):
-        """Train the KNN model on the provided data."""
-        try:
-            # Load training data
-            df = pd.read_csv(csv_file)
-            print(f"Loaded {len(df)} training samples from {csv_file}")
-            
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
-            # Split into train/test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train the model
-            self.model.fit(X_train, y_train)
-            
-            # Evaluate on test set
-            y_pred = self.model.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            print(f"KNN training completed. Test accuracy: {accuracy:.3f}")
-            
-        except FileNotFoundError:
-            print(f"Training data file {csv_file} not found. Model will not be available.")
-            self.model = None
-        except Exception as e:
-            print(f"Error training KNN model: {e}")
-            self.model = None
-    
+        self._train_model(csv_file, "KNN")
+   
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using KNN prediction."""
-        if self.model is None:
-            return None
-            
-        # Get current sensor readings and distance
-        sensors = world.get_sensor_readings(current_position)
-        distance_to_goal = world.get_distance_to_goal(current_position)
-        
-        # Prepare input for model
-        features = np.array([sensors + [distance_to_goal]])
-        
-        # Get model prediction
-        try:
-            action = self.model.predict(features)[0]
-            
-            # Validate action is in valid range
-            if 0 <= action <= 7:
-                return int(action)
-        except Exception as e:
-            print(f"KNN prediction error: {e}")
-        
-        return None
+       
 
 class XGBoostLogic(Logic):
     """XGBoost classifier logic implementation."""
@@ -497,6 +395,7 @@ class XGBoostLogic(Logic):
             n_estimators: Number of boosting rounds
             random_state: Random seed for reproducibility
         """
+        super().__init__()  # Initialize loop detection
         try:
             import xgboost as xgb
             self.model = xgb.XGBClassifier(
@@ -504,7 +403,7 @@ class XGBoostLogic(Logic):
                 random_state=random_state,
                 eval_metric='mlogloss'
             )
-            self._train_model(csv_file)
+            self._train_model(csv_file, "XGBoost")
         except ImportError:
             print("XGBoost is not available. Install with: pip install xgboost")
             self.model = None
@@ -512,67 +411,12 @@ class XGBoostLogic(Logic):
             print(f"XGBoost initialization failed: {e}")
             print("For macOS users: Run 'brew install libomp' to install OpenMP runtime")
             self.model = None
-    
-    def _train_model(self, csv_file: str):
-        """Train the XGBoost model on the provided data."""
-        if self.model is None:
-            return
-            
-        try:
-            # Load training data
-            df = pd.read_csv(csv_file)
-            print(f"Loaded {len(df)} training samples from {csv_file}")
-            
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
-            # Split into train/test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train the model
-            self.model.fit(X_train, y_train)
-            
-            # Evaluate on test set
-            y_pred = self.model.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            print(f"XGBoost training completed. Test accuracy: {accuracy:.3f}")
-            
-        except FileNotFoundError:
-            print(f"Training data file {csv_file} not found. Model will not be available.")
-            self.model = None
-        except Exception as e:
-            print(f"Error training XGBoost model: {e}")
-            self.model = None
-    
+
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using XGBoost prediction."""
-        if self.model is None:
-            return None
-            
-        # Get current sensor readings and distance
-        sensors = world.get_sensor_readings(current_position)
-        distance_to_goal = world.get_distance_to_goal(current_position)
-        
-        # Prepare input for model
-        features = np.array([sensors + [distance_to_goal]])
-        
-        # Get model prediction
-        try:
-            action = self.model.predict(features)[0]
-            
-            # Validate action is in valid range
-            if 0 <= action <= 7:
-                return int(action)
-        except Exception as e:
-            print(f"XGBoost prediction error: {e}")
-        
-        return None
+       
 
 class NeuralNetworkLogic(Logic):
     """Neural Network (MLP) classifier logic implementation."""
@@ -588,100 +432,16 @@ class NeuralNetworkLogic(Logic):
             random_state: Random seed for reproducibility
             max_iter: Maximum number of iterations
         """
+        super().__init__()  # Initialize loop detection
         self.model = MLPClassifier(
             hidden_layer_sizes=hidden_layer_sizes,
             random_state=random_state,
             max_iter=max_iter,
             solver='adam'
         )
-        self._train_model(csv_file)
-    
-    def _train_model(self, csv_file: str):
-        """Train the Neural Network model on the provided data."""
-        try:
-            # Load training data
-            df = pd.read_csv(csv_file)
-            print(f"Loaded {len(df)} training samples from {csv_file}")
-            
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
-            # Split into train/test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train the model
-            self.model.fit(X_train, y_train)
-            
-            # Evaluate on test set
-            y_pred = self.model.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            print(f"Neural Network training completed. Test accuracy: {accuracy:.3f}")
-            
-        except FileNotFoundError:
-            print(f"Training data file {csv_file} not found. Model will not be available.")
-            self.model = None
-        except Exception as e:
-            print(f"Error training Neural Network model: {e}")
-            self.model = None
-    
-    def reset(self):
-        """Reset any internal state."""
-        pass
-    
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using Neural Network prediction."""
-        if self.model is None:
-            return None
-            
-        # Get current sensor readings and distance
-        sensors = world.get_sensor_readings(current_position)
-        distance_to_goal = world.get_distance_to_goal(current_position)
-        
-        # Prepare input for model
-        features = np.array([sensors + [distance_to_goal]])
-        
-        # Get model prediction
-        try:
-            action = self.model.predict(features)[0]
-            
-            # Validate action is in valid range
-            if 0 <= action <= 7:
-                return int(action)
-        except Exception as e:
-            print(f"Neural Network prediction error: {e}")
-        
-        return None
+        self._train_model(csv_file, "NeuralNetwork")
 
-class ModelLogic(Logic):
-    """Machine learning model logic implementation."""
-    
-    def __init__(self, model):
-        """Initialize with trained model."""
-        self.model = model
-    
     def reset(self):
         """Reset any internal state."""
-        pass
+        super().reset()  # Reset loop detection
     
-    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using trained model prediction."""
-        # Get current sensor readings and distance
-        sensors = world.get_sensor_readings(current_position)
-        distance_to_goal = world.get_distance_to_goal(current_position)
-        
-        # Prepare input for model
-        features = sensors + [distance_to_goal]
-        
-        # Get model prediction
-        try:
-            action = self.model.predict([features])[0]
-            
-            # Validate action is in valid range
-            if 0 <= action <= 7:
-                return int(action)
-        except Exception as e:
-            print(f"Model prediction error: {e}")
-        
-        return None 
