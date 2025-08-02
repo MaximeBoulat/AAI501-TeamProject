@@ -188,6 +188,30 @@ Recent large-scale environments like Habitat, Gibson, and DeepMind Lab have beco
 | KNN | 0.273 |
 | Neural Network | 0.854 |
 
+The addition of angle_direction as a variable in the data caused a significant improvement in the performance of most models (less so for Logistic Regression, KNN, SVM and Naive Bayes).
+
+What does this show:
+
+....
+
+
+We were able to visualize the decision-making abilities of the various models by loading the model's prediction function into the simulator and presenting it with new randomly generated worlds.
+
+The performance shows a good ability to solve puzzles which the model have never seen before without making blatant mistakes (such as moving into obstructed tiles), showing that the high scores are not caused by overfitting to pre-existing data. 
+
+The trained models showed good obstacle avoidance behavior, usually avoiding unforced errors such as moving into an obstacle when there is a clear path around it, and good goal seeking behavior.
+
+This shows that it is possible to train machine learning algorithms on expert behavior (A*) and have it incorporate utility maximizing behavior such as avoiding obstacles and using the shortest path to the goal.
+
+The area where the trained algorithms struggled was in the area of avoiding bigger obstacles that spanned multiple blocks and required more complex planning behaviors. In these cases, the algorithms either chose to make an illegal move, or got stuck in an infinite loop.
+
+What does that mean and what are the ways to solve that:
+
+.....
+
+
+
+
 ## References
 
 - Barreto, A., Dabney, W., Munos, R., Hunt, J. J., Schaul, T., van Hasselt, H., & Silver, D. (2018). *Successor features for transfer in reinforcement learning*. arXiv. https://arxiv.org/abs/1606.05312
@@ -209,5 +233,7 @@ Recent large-scale environments like Habitat, Gibson, and DeepMind Lab have beco
 - Ross, S., Gordon, G. J., & Bagnell, J. A. (2011). *A reduction of imitation learning and structured prediction to no-regret online learning*. arXiv. https://arxiv.org/abs/1011.0686
 
 - Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2017). *Value iteration networks*. arXiv. https://arxiv.org/abs/1602.02867
+
+"In these tasks, a neural network (NN) is trained to represent a policy – a mapping from an observation of the system’s state to an action, with the goal of representing a control strategy that has good long-term behavior, typically quantified as the minimization of a sequence of time-dependent costs"
 
 - Xia, F., Li, C., Chen, K., Shen, W. B., Martín-Martín, R., Hirose, N., Zamir, A. R., Fei-Fei, L., & Savarese, S. (2019, June 16). *Gibson Env V2: Embodied simulation environments for interactive navigation* (Tech. Rep.). Stanford University. http://svl.stanford.edu/gibson2
