@@ -26,24 +26,16 @@ Components are injected into `Simulator(logic, renderer)`.
 
 ## Usage
 
-**Run simulation:**
-```python
-renderer = ConsoleRenderer()
-logic = AStarLogic()
-simulator = Simulator(logic, renderer)
-simulator.run_simulation()
-```
-
 **Generate training data for ML models:**
 ```python
 logic = AStarLogic()
 simulator = Simulator(logic, renderer)
-simulator.generate_training_data(num_runs=100)
+simulator.run_multiple(num_runs=3000, collect_data=True, slow=False)
 ```
 
 **Use ML models (after generating training data):**
 ```python
 logic = RandomForestLogic()  # Trains automatically on training_data.csv
 simulator = Simulator(logic, renderer)
-simulator.run_simulation()
+simulator.run_multiple(num_runs=100, collect_data=False, slow=True)
 ``` 

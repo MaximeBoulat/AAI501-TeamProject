@@ -13,9 +13,8 @@ import numpy as np
 # Load dataset
 df = pd.read_csv("robot_training_data.csv")
 
-# Filter columns
-exclude_cols = ["timestamp", "run_id", "action"]  # action no longer target
-X = df[[col for col in df.columns if col not in exclude_cols]]
+sensor_cols = [f"sensor_{i}" for i in range(8)]
+X = df[sensor_cols]
 y_angle = df["goal_direction"].astype(float)
 
 # Normalize angle (in radians) to [0, 1] for regression
