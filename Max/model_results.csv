@@ -1,0 +1,8 @@
+model_type,data_schema_version,accuracy
+RandomForest,2.0,0.838
+XGBoost,2.0,0.83
+LogisticRegression,2.0,0.531
+SVM,2.0,0.501
+NaiveBayes,2.0,0.632
+KNN,2.0,0.284
+NeuralNetwork,2.0,0.804
