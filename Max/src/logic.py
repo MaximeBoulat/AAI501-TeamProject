@@ -21,6 +21,9 @@ from world import World
 # 1.0: sample size 100
 # 1.1: sample size 3000
 # 2.0: sample size 3000, goal direction added
+# 2.1: sample size 10000
+# 2.2: match Dylan config
+# 2.3: use Dylan's dataset
 
 DATA_SCHEMA_VERSION = "2.0"
 
@@ -116,7 +119,7 @@ class Logic(ABC):
         if len(self.position_history) > self.max_history_length:
             self.position_history = self.position_history[-self.max_history_length:]
 
-    def _train_model(self, csv_file: str, model_type: str):
+    def _train_model(self, model_type: str, csv_file: str = "training_data.csv"):
         """Train the model on the provided data."""
         try:
             # Load training data
@@ -274,7 +277,7 @@ class AStarLogic(Logic):
 class RandomForestLogic(Logic):
     """Random Forest classifier logic implementation."""
     
-    def __init__(self, csv_file: str = "training_data.csv", n_estimators: int = 100, random_state: int = 42):
+    def __init__(self, n_estimators: int = 100, random_state: int = 42):
         """
         Initialize Random Forest logic with training data.
         
@@ -285,7 +288,7 @@ class RandomForestLogic(Logic):
         """
         super().__init__()  # Initialize loop detection
         self.model = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
-        self._train_model(csv_file, "RandomForest")
+        self._train_model("RandomForest")
 
     def reset(self):
         """Reset any internal state."""
@@ -296,7 +299,7 @@ class RandomForestLogic(Logic):
 class LogisticRegressionLogic(Logic):
     """Multinomial Logistic Regression classifier logic implementation."""
     
-    def __init__(self, csv_file: str = "training_data.csv", random_state: int = 42):
+    def __init__(self, random_state: int = 42):
         """
         Initialize Logistic Regression logic with training data.
         
@@ -311,7 +314,7 @@ class LogisticRegressionLogic(Logic):
             random_state=random_state,
             max_iter=1000
         )
-        self._train_model(csv_file, "LogisticRegression")
+        self._train_model("LogisticRegression")
    
     def reset(self):
         """Reset any internal state."""
@@ -321,7 +324,7 @@ class LogisticRegressionLogic(Logic):
 class SVMLogic(Logic):
     """Support Vector Machine classifier logic implementation."""
     
-    def __init__(self, csv_file: str = "training_data.csv", kernel: str = 'rbf', random_state: int = 42):
+    def __init__(self, kernel: str = 'rbf', random_state: int = 42):
         """
         Initialize SVM logic with training data.
         
@@ -336,7 +339,7 @@ class SVMLogic(Logic):
             random_state=random_state,
             gamma='scale'
         )
-        self._train_model(csv_file, "SVM")
+        self._train_model("SVM")
  
     def reset(self):
         """Reset any internal state."""
@@ -345,7 +348,7 @@ class SVMLogic(Logic):
 class NaiveBayesLogic(Logic):
     """Naive Bayes classifier logic implementation."""
     
-    def __init__(self, csv_file: str = "training_data.csv"):
+    def __init__(self):
         """
         Initialize Naive Bayes logic with training data.
         
@@ -354,7 +357,7 @@ class NaiveBayesLogic(Logic):
         """
         super().__init__()  # Initialize loop detection
         self.model = GaussianNB()
-        self._train_model(csv_file, "NaiveBayes")
+        self._train_model("NaiveBayes")
    
     def reset(self):
         """Reset any internal state."""
@@ -365,7 +368,7 @@ class NaiveBayesLogic(Logic):
 class KNNLogic(Logic):
     """K-Nearest Neighbors classifier logic implementation."""
     
-    def __init__(self, csv_file: str = "training_data.csv", n_neighbors: int = 5):
+    def __init__(self, n_neighbors: int = 5):
         """
         Initialize KNN logic with training data.
         
@@ -375,7 +378,7 @@ class KNNLogic(Logic):
         """
         super().__init__()  # Initialize loop detection
         self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
-        self._train_model(csv_file, "KNN")
+        self._train_model("KNN")
    
     def reset(self):
         """Reset any internal state."""
@@ -386,7 +389,7 @@ class KNNLogic(Logic):
 class XGBoostLogic(Logic):
     """XGBoost classifier logic implementation."""
     
-    def __init__(self, csv_file: str = "training_data.csv", n_estimators: int = 100, random_state: int = 42):
+    def __init__(self, n_estimators: int = 100, random_state: int = 42):
         """
         Initialize XGBoost logic with training data.
         
@@ -403,7 +406,7 @@ class XGBoostLogic(Logic):
                 random_state=random_state,
                 eval_metric='mlogloss'
             )
-            self._train_model(csv_file, "XGBoost")
+            self._train_model("XGBoost")
         except ImportError:
             print("XGBoost is not available. Install with: pip install xgboost")
             self.model = None
@@ -421,7 +424,7 @@ class XGBoostLogic(Logic):
 class NeuralNetworkLogic(Logic):
     """Neural Network (MLP) classifier logic implementation."""
     
-    def __init__(self, csv_file: str = "training_data.csv", hidden_layer_sizes: tuple = (100, 50), 
+    def __init__(self, hidden_layer_sizes: tuple = (100, 50), 
                  random_state: int = 42, max_iter: int = 500):
         """
         Initialize Neural Network logic with training data.
@@ -439,7 +442,7 @@ class NeuralNetworkLogic(Logic):
             max_iter=max_iter,
             solver='adam'
         )
-        self._train_model(csv_file, "NeuralNetwork")
+        self._train_model("NeuralNetwork")
 
     def reset(self):
         """Reset any internal state."""

@@ -29,17 +29,32 @@ The final team project in our applied artificial intelligence course asks us to 
 
 ### 2.1 World generation and sensors
 
-The environment is a square grid of size 30×30.  A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.1`) and adds several horizontal or vertical walls of random lengths.  The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle.  Each simulation generates a new world, ensuring a diverse set of layouts.  The agent can move in eight directions corresponding to the Moore neighborhood (left, left+down, down, right+down, right, right+up, up, left+up).
+The environment is a square grid of size 20×20.  A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.2`) and adds several horizontal or vertical walls of random lengths.  The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle.  Each simulation generates a new world, ensuring a diverse set of layouts.  The agent can move in eight directions corresponding to the Moore neighborhood (left, left+down, down, right+down, right, right+up, up, left+up).
 
 To navigate, the agent initially received local information solely from eight radial distance sensors. Each sensor reports the number of unobstructed tiles from the agent’s position in one of eight directions, up to the nearest wall or obstacle. As part of our methodology to improve learning performance, we incrementally introduced additional features.
 
-First, we added the Euclidean distance to the goal, giving the agent a global sense of how far it remained from its objective. This feature provided useful context that wasn't captured by the local sensors alone, helping guide movement decisions more effectively. We also explored normalizing the direction to the goal as a unit vector, which offered a modest but consistent performance boost by encoding directional intent in a format that complements the sensor layout.
+First, we added the Euclidean distance to the goal, giving the agent a global sense of how far it remained from its objective. This feature provided useful context that wasn't captured by the local sensors alone, helping guide movement decisions more effectively. 
+
+We then added goal direction as computed angle between the agent and the goal to give more spatial context.
+
+We also explored normalizing the direction to the goal as a unit vector, which offered a modest but consistent performance boost by encoding directional intent in a format that complements the sensor layout.
+
+
+<Max: here we need to branch>
+
+#### Dylan
 
 With these enhancements, the final raw state representation consisted of sensor_0 to sensor_7, the distance_to_goal, and optionally, a normalized direction vector to the goal. A tuple of the agent’s coordinates was logged for reference but not used during training.
+
+### Max
+
+With these enhancements, the final raw state representation consisted of sensor_0 to sensor_7, the distance_to_goal, and the goal_direction.
 
 The target variable initially remained the action chosen by A*—an integer from 0 to 7 representing one of the eight possible moves. To investigate whether this discrete classification setup limited learning performance, we also experimented with a continuous formulation of the target variable, such as using the unit direction vector of the optimal move (ŷ as a 2D vector). This change aimed to provide a smoother learning signal and encourage better generalization, particularly in ambiguous or edge-case states.
 
 ### 2.1 Choosing Appropriate Algorithm Structures (Can move to model section?)
+
+<Max: I would move this to model selection>
 
 Selecting the right structure for the various AI selected models, for example, the neural network architecture is a critical part of our methodology. The structure of the network—including the number of layers, the number of units per layer, activation functions, and regularization strategies—can significantly affect the model's ability to learn from the input features and generalize to new environments.
 
@@ -64,10 +79,18 @@ A* search uses a priority queue to explore nodes with the lowest estimated total
 | `action`                   | Optimal move (0–7) as determined by A*            |
 
 
-We generated 150 runs, resulting in 2 338 labelled instances.  The dataset was saved as `robot_training_data.csv` for analysis.
+
+We generated multiple batches of data:
+
+- Version 1.1: Sample size 3000 runs (~40,000 labelled instances), no goal direction
+- Version 2.2: Sample size 3000 runs (~40,000 labelled instances), goal direction as a feature
+- Version 2.3: Sample size 10000 runs (~140,000 labelled instances), goal direction as a feature
+
 
 
 ### 2.3 Exploratory data analysis
+
+<Max: This whole section needs to be reworked>
 
 We performed exploratory data analysis (EDA) on the dataset to understand feature distributions and potential issues.  Figure 1 shows boxplots of the sensor readings by action; the distribution of distances varies across sensors and actions, with some directions frequently returning small values (closer obstacles).  The correlation matrix in Figure 2 reveals weak correlations among most sensors and between sensors and the distance to the goal, suggesting that each sensor provides distinct information about the environment.
 
@@ -90,6 +113,8 @@ An important observation from EDA is that identical sensor readings can correspo
 To quantify this phenomenon, we grouped training samples by their eight sensor values (ignoring the distance to goal) and counted how many unique actions were labelled as optimal within each group.  Approximately 72 % of sensor configurations were associated with two or more different actions; some had up to four distinct labels.  Consequently, no deterministic function can perfectly map the sensors to the optimal action.  This violation of the i.i.d. assumption is a known failure mode of **behavior cloning**, where an agent learns from expert demonstrations but never receives corrective feedback for states outside the expert’s distribution.  Ross et al. proposed DAgger (Dataset Aggregation), an imitation-learning algorithm that mitigates distributional shift by collecting expert feedback along the learner’s own trajectories【725851254557814†L8-L24】.
 
 ### 2.5 Model selection and training
+
+//MAX: Here I would branch: Max's model selection, Dylan's model selection. I would put the Choosing Appropriate Algorith, structures section in Dylan's Model Selection
 
 We evaluated a suite of classification algorithms using the scikit-learn and XGBoost libraries.  Each model was trained to predict the optimal action given the eight sensor distances and the distance to the goal.  We used a stratified 80/20 train–test split, ensuring that each action class was proportionally represented in both sets.  The models and their training hyper-parameters were:
 1. **Random Forest** with 100 trees and default settings.
@@ -119,6 +144,8 @@ During training, we observed that the neural network sometimes failed to converg
 
 ### 2.6 Opportunities for selecting other Models
 
+//MAX: I would move this to 5. Discussion
+
 While these models provide a solid baseline, there are alternative approaches better tailored to sequential or spatial decision-making tasks:
 
 **Convolutional Neural Networks (CNNs)** – If we restructure the sensor data into a spatial grid or local map, CNNs could better exploit local patterns and symmetry in navigation tasks.
@@ -133,43 +160,42 @@ For our current dataset and imitation-learning setup, tree-based models like XGB
 
 
 ## 3 Results
-| **Model**              | **Accuracy** | **Weighted F1 score** |
-| ---------------------- | -----------: | --------------------: |
-| Random Forest          |        0.365 |                 0.351 |
-| XGBoost                |        0.365 |                 0.360 |
-| Support Vector Machine |        0.346 |                 0.313 |
-| Neural Network (MLP)   |        0.297 |                 0.292 |
-| Logistic Regres   
-     |
-Table 1 reports the average accuracy and weighted F1 score for each model on the held-out test set.  The Random Forest and XGBoost models achieved the highest accuracy (≈ 0.37), while logistic regression, Naïve Bayes and KNN performed around 0.29–0.30.  The neural network did not surpass 0.30 accuracy despite hyper-parameter tuning.  Support vector machines performed moderately (0.35 accuracy).  Given the eight-class problem and the shifting-signals issue, even 0.37 accuracy represents only a modest improvement over a naïve baseline (predicting the most frequent action yields ~0.24).
 
-![Accuracy bar chart for the seven models evaluated]({{file-6RqDmsstnnN84JHZUKEqJF}})
+// MAX: Here we should branch: Max: results and interpretation of results, Dylan: results and interpretation of results
 
-**Figure 3.** 
 
-Comparison of model accuracies.  Random Forest and XGBoost achieve the highest accuracy (~0.37), followed by SVM (~0.35).  All models perform significantly below perfect accuracy because the task is ill-posed.
+### 3.1 Max's results + interpretation
 
-![Weighted F1 scores for each model]({{file-WbbgyeHbn3oueqtgxDDaBD}})
+| Model | Version 1.1 Accuracy | Version 2.2 Accuracy | Version 2.3 Accuracy |
+|-------|----------------------|----------------------|----------------------|
+| Random Forest | 0.357 | 0.791 | 0.793 |
+| XGBoost | 0.405 | 0.791 | 0.797 |
+| Support Vector Machine | 0.369 | 0.546 | 0.769 |
+| Neural Network (MLP) | 0.382 | 0.769 | 0.792 |
+| Logistic Regression | 0.328 | 0.515 | 0.529 |
+| Naïve Bayes | 0.314 | 0.575 | 0.584 |
+| K-Nearest Neighbors | 0.308 | 0.332 | 0.708 |
 
-**Figure 4.** 
+The table above reports the accuracy for each model across the three dataset versions on the held-out test set. Version 1.1 (without goal direction) shows consistently low performance across all models, with XGBoost achieving the highest accuracy (0.405) and KNN the lowest (0.308). The addition of goal direction as a feature in versions 2.2 and 2.3 dramatically improves performance. Random Forest and XGBoost achieve the highest accuracy in version 2.3 (0.793 and 0.797 respectively), while Neural Networks show substantial improvement from 0.382 in version 1.1 to 0.792 in version 2.3. Logistic Regression remains the poorest performer even with goal direction features. The larger dataset in version 2.3 generally improves performance compared to version 2.2, particularly for SVM and KNN models.
 
-Weighted F1 scores of the models.  The ranking mirrors the accuracy results; F1 scores are slightly lower than accuracy because the models tend to misclassify minority actions more often.
+What this shows is that providing the model with additional spatial context—in this case, angle_direction relative to the goal—can significantly enhance its ability to make optimal decisions. Models trained without this feature lack directional bias and perform more reactively than proactively.
 
-Figure 5 
 
-shows the confusion matrix of the Random Forest classifier.  The matrix reveals that the model most frequently predicts actions 0 (left) and 2 (down), regardless of the true label, reflecting its bias toward the most common actions.  Errors occur in nearly every off-diagonal cell, indicating poor discrimination between similar moves.
+We were able to visualize the decision-making abilities of the various models by loading the model's prediction function into the simulator and presenting it with new randomly generated worlds.
 
-![Confusion matrix of the Random Forest classifier]({{file-JPrZrmPnSb7DboAnEqc1Ea}})
+![](Resources/Happy.png)
 
-**Figure 5.** 
+The models demonstrated generalization to novel maze configurations, effectively avoiding illegal moves (e.g., walking into walls) and progressing toward goals. This suggests that the models have learned underlying spatial heuristics rather than memorizing training trajectories.
 
-Confusion matrix for the Random Forest model (rows: true actions; columns: predicted actions).  True actions 0 and 2 dominate the training data, leading to a high number of false positives for those classes and poor recall for less frequent actions.
+It is interesting to note that even though the trained models were able to emulate A* behavior when the solution did not involve bypassing large obstacles, their ability to reason their way around obstacles broke down when the path involved more than 3-4 tiles away from the goal direction.
 
-### 3.1 Interpretation of results
+![](Resources/Sad.png)
 
-The relatively low accuracies across all models can be explained by the shifting-signals problem.  Because the expert policy (A*) has global knowledge and the learners rely solely on local sensors, the mapping from sensors to actions is not deterministic.  Models with greater capacity (Random Forest, XGBoost) can capture more complex decision boundaries and thus outperform linear methods.  However, no model can resolve contradictions in the data without additional information.
 
-Logistic regression and Naïve Bayes assume linear or independent relationships between features and labels, which are inadequate for this task.  K-nearest neighbors suffers from high-dimensional sparsity: most sensor configurations appear only once in the dataset, so nearest-neighbor retrieval is essentially random.  Neural networks struggle to learn stable patterns because each input combination might map to multiple labels; the network falls back to predicting the majority action.  Supporting vector machines achieve slightly better performance but still cannot overcome the fundamental ambiguity.
+
+### 3.2 Dylan's results + interpretation
+
+
 
 ## 4 Related work
 
@@ -181,6 +207,8 @@ Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle par
 Other research on autonomous driving emphasizes the gap between high step-wise action accuracy and actual performance.  Codevilla et al. show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes.  Therefore, evaluation metrics should include path efficiency, collision rates and goal success rather than solely action prediction accuracy.  Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
 
 ## 5 Discussion
+
+//MAX: this needs to be reworked and made to reflect the combined topics between Max and Dylan's research
 
 The experiments reveal several insights about using supervised learning to mimic a path-planner in a partially observable environment:
 

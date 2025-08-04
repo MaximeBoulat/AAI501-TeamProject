@@ -13,7 +13,7 @@ class Simulator:
     
     def __init__(self, logic: Logic, renderer: Renderer):
 
-        world = World.from_random(size=30, obstacle_prob=0.1)
+        world = World.from_random()
 
         agent = Agent(world, logic)
 
@@ -114,7 +114,7 @@ class Simulator:
             
             # Generate new world
             try:
-                world = World.from_random(size=30, obstacle_prob=0.1)
+                world = World.from_random()
                 self.world = world
                 self.agent.world = world
             except RuntimeError as e:
