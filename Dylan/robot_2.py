@@ -119,7 +119,7 @@ def get_goal_direction_radians(current, goal):
     dy = current[1] - goal[1]  # Invert Y to make 0 point north
 
     angle = math.atan2(dx, dy)  # dx first because 0° = north
-    angle = angle % (2 * math.pi) / (2 * math.pi) # Normalize to [0, 1)
+    angle = angle % (2 * math.pi) # Normalize to [0, 1)
     return angle
 
 def generate_training_data(world, path, run_id, starting_timestamp):
