@@ -18,15 +18,16 @@ from simulator import Simulator
 
 def main():
 
+    print("Starting simulation...")
     renderer = PygameRenderer(cell_size=30, show_path_history=True, window_title="Robot Navigation")
 
-    # logic = RandomForestLogic()
+    logic = RandomForestLogic()
     # logic = XGBoostLogic()   
     # logic = LogisticRegressionLogic()
     # logic = SVMLogic()
     # logic = NaiveBayesLogic()
     # logic = KNNLogic()
-    logic = NeuralNetworkLogic()  
+    # logic = NeuralNetworkLogic()  
     # logic = NeuralNetworkLogic(hidden_layer_sizes=(200, 100, 50))  # Larger network
 
     # logic = AStarLogic()
@@ -35,7 +36,7 @@ def main():
 
     # simulator.run_multiple(num_runs=3000, collect_data=True, slow=False)
     simulator.run_multiple(num_runs=100, collect_data=False, slow=True)
-    # simulator.run_simulation()
+
     
 
     
