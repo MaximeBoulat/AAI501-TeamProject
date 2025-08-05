@@ -90,13 +90,13 @@ def get_sensor_readings(world, pos):
             dist += 1
             if not (0 <= x < world.shape[1] and 0 <= y < world.shape[0]) or world[y][x] == 1:
                 break
-        readings.append(dist / MAX_GOAL_DISTANCE)
+        readings.append(dist)
     return readings
 
 def get_action(from_pos, to_pos):
     dx = to_pos[0] - from_pos[0]
     dy = to_pos[1] - from_pos[1]
-    for i, (ddy, ddx) in enumerate(DIRECTIONS):
+    for i, (ddx, ddy) in enumerate(DIRECTIONS):
         if (dx, dy) == (ddx, ddy):
             return i
     return None
@@ -109,7 +109,7 @@ def get_goal_direction_index(current, goal):
     # Normalize to unit direction
     norm_dx = np.sign(dx)
     norm_dy = np.sign(dy)
-    for i, (ddy, ddx) in enumerate(DIRECTIONS):
+    for i, (ddx, ddy) in enumerate(DIRECTIONS):
         if (norm_dx, norm_dy) == (ddx, ddy):
             return i
     return None
@@ -129,7 +129,7 @@ def generate_training_data(world, path, run_id, starting_timestamp):
         sensors = get_sensor_readings(world, path[i])
         action = get_action(path[i], path[i + 1])
         if action is not None:
-            remaining = np.linalg.norm(np.subtract(path[-1], path[i])) / MAX_GOAL_DISTANCE
+            remaining = np.linalg.norm(np.subtract(path[-1], path[i]))
             goal_direction = get_goal_direction_radians(path[i], path[-1])
             data.append((timestamp, run_id, sensors, action, remaining, goal_direction))
             timestamp += 1
