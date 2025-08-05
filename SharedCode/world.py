@@ -115,13 +115,4 @@ class World:
         return angle
 
     
-    def get_neighbors(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
-        neighbors = []
-        x, y = position
-        
-        for dx, dy in self.DIRECTIONS:
-            new_x, new_y = x + dx, y + dy
-            if self.is_valid_position(new_x, new_y):
-                neighbors.append((new_x, new_y))
-        
-        return neighbors 
+   
