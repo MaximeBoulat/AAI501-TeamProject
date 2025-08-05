@@ -53,6 +53,14 @@ class BaseModel(ABC):
             # Train the model
             self.model.fit(X_train_scaled, y_train)
 
+            # Save model to disk
+            model_filename = f"{model_type}.pkl"
+            try:
+                joblib.dump(self.model, model_filename)
+                print(f"Saved trained model to {model_filename}")
+            except Exception as e:
+                print(f"Error saving model {model_type}: {e}")    
+
             # Evaluate on test set
             y_pred = self.model.predict(X_test_scaled)
             accuracy = accuracy_score(y_test, y_pred)
