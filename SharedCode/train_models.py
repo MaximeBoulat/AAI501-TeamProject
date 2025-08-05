@@ -55,7 +55,7 @@ class BaseModel(ABC):
             self.model.fit(X_train_scaled, y_train)
 
             # Save model to disk
-            model_filename = f"{model_type}.pkl"
+            model_filename = f"models/{model_type}.pkl"
             try:
                 joblib.dump(self.model, model_filename)
                 print(f"Saved trained model to {model_filename}")

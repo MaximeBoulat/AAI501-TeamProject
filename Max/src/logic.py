@@ -220,7 +220,7 @@ class RandomForestLogic(Logic):
             random_state: Random seed for reproducibility
         """
         super().__init__()  # Initialize loop detection
-        self.model = joblib.load("RandomForest.pkl")
+        self.model = joblib.load("/models/ RandomForest.pkl")
 
     def reset(self):
         """Reset any internal state."""
@@ -240,7 +240,7 @@ class LogisticRegressionLogic(Logic):
             random_state: Random seed for reproducibility
         """
         super().__init__()  # Initialize loop detection
-        self.model = joblib.load("LogisticRegression.pkl")
+        self.model = joblib.load("/models/LogisticRegression.pkl")
    
     def reset(self):
         """Reset any internal state."""
@@ -260,7 +260,7 @@ class SVMLogic(Logic):
             random_state: Random seed for reproducibility
         """
         super().__init__()  # Initialize loop detection
-        self.model = joblib.load("SVM.pkl")
+        self.model = joblib.load("/models/SVM.pkl")
  
     def reset(self):
         """Reset any internal state."""
@@ -277,7 +277,7 @@ class NaiveBayesLogic(Logic):
             csv_file: Path to training data CSV file
         """
         super().__init__()  # Initialize loop detection
-        self.model = joblib.load("NaiveBayes.pkl")
+        self.model = joblib.load("/models/NaiveBayes.pkl")
    
     def reset(self):
         """Reset any internal state."""
@@ -295,7 +295,7 @@ class KNNLogic(Logic):
             n_neighbors: Number of neighbors to consider
         """
         super().__init__()  # Initialize loop detection
-        self.model = joblib.load("KNN.pkl")
+        self.model = joblib.load("/models/KNN.pkl")
    
     def reset(self):
         """Reset any internal state."""
@@ -315,7 +315,7 @@ class XGBoostLogic(Logic):
         """
         super().__init__()  # Initialize loop detection
         try:
-            self.model = joblib.load("XGBoost.pkl")
+            self.model = joblib.load("/models/XGBoost.pkl")
         except ImportError:
             print("XGBoost is not available. Install with: pip install xgboost")
             self.model = None
@@ -343,7 +343,7 @@ class NeuralNetworkLogic(Logic):
             max_iter: Maximum number of iterations
         """
         super().__init__()  # Initialize loop detection
-        self.model = joblib.load("NeuralNetwork.pkl")
+        self.model = joblib.load("/models/NeuralNetwork.pkl")
 
     def reset(self):
         """Reset any internal state."""
