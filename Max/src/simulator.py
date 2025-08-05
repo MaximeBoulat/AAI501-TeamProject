@@ -13,7 +13,7 @@ class Simulator:
     
     def __init__(self, logic: Logic, renderer: Renderer):
 
-        world = World.from_random()
+        world = World.from_random(seed=42)
 
         agent = Agent(world, logic)
 

@@ -153,7 +153,9 @@ class Logic(ABC):
             self.model = None
     
     def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-        """Get next action using model prediction with loop detection."""
+
+
+        
         # Check for loop before making any action decision
         if self._detect_loop(current_position):
             print(f"Loop detected at position {current_position}. Returning invalid action.")
@@ -176,6 +178,8 @@ class Logic(ABC):
         # Get model prediction
         try:
             action = self.model.predict(features)[0]
+
+            print(f"action: {action}")
             
             # Validate action is in valid range
             if 0 <= action <= 7:
@@ -244,6 +248,12 @@ class AStarLogic(Logic):
         return self._compute_astar_path(world, start, goal)
     
     def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+
+
+        print(f"current_position: {current_position}")
+        print(f"sensors: {world.get_sensor_readings(current_position)}")
+        print(f"distance_to_goal: {world.get_distance_to_goal(current_position)}")
+        print(f"goal_direction: {world.get_goal_direction_radians(current_position)}")
         """Get next action using A* pathfinding with loop detection."""
         # Check for loop before making any action decision
         if self._detect_loop(current_position):
@@ -270,6 +280,7 @@ class AStarLogic(Logic):
             self.current_step += 1
             
             if action != -1:
+                print(f"action: {action}")
                 return action
         
         return None
