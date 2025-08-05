@@ -1,1 +1,1 @@
-Final Validation MAE: 0.0387
+Final Validation MAE: 1.5278

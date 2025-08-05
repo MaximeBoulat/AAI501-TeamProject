@@ -15,13 +15,10 @@ df = pd.read_csv("robot_training_data.csv")
 
 sensor_cols = [f"sensor_{i}" for i in range(8)]
 X = df[sensor_cols]
-y_angle = df["goal_direction"].astype(float)
-
-# Normalize angle (in radians) to [0, 1] for regression
-y_normalized = y_angle / (2 * np.pi)
+y_angle = df["action_direction"].astype(float)
 
 # Train-test split
-X_train, X_test, y_train, y_test = train_test_split(X, y_normalized, test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(X, y_angle, test_size=0.2, random_state=42)
 
 # Scale features
 scaler = StandardScaler()
@@ -31,8 +28,8 @@ X_test_scaled = scaler.transform(X_test)
 # Build regression model
 model = Sequential([
     Dense(64, activation='relu', input_shape=(X_train_scaled.shape[1],)),
-    Dense(32, activation='relu'),
-    Dense(1, activation='sigmoid')  # output normalized angle
+    Dense(128, activation='relu'),
+    Dense(1)  # output normalized angle
 ])
 model.compile(optimizer='adam', loss='mse', metrics=['mae'])
 

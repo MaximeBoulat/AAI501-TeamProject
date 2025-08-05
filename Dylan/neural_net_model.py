@@ -27,13 +27,13 @@ X_test_scaled = scaler.transform(X_test)
 # Build neural network
 model = Sequential([
     Dense(64, activation='relu', input_shape=(8,)),
-    Dense(32, activation='relu'),
+    Dense(128, activation='relu'),
     Dense(8, activation='softmax')
 ])
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # Train
-history = model.fit(X_train_scaled, y_train, validation_data=(X_test_scaled, y_test), epochs=30, batch_size=32, verbose=0)
+history = model.fit(X_train_scaled, y_train, validation_data=(X_test_scaled, y_test), epochs=100, batch_size=32, verbose=0)
 
 # Output folder
 output_dir = "neural_net_outputs"
