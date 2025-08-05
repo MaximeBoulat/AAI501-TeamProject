@@ -27,47 +27,6 @@ from world import World
 
 DATA_SCHEMA_VERSION = "2.0"
 
-def log_model_results(model_type: str, accuracy: float, results_file: str = "model_results.csv"):
-    """
-    Log model results to CSV file. Overwrites existing row if model_type and schema version match.
-    
-    Args:
-        model_type: Name of the model type
-        accuracy: Test accuracy score
-        results_file: Path to results CSV file
-    """
-    try:
-        
-        # Check if results file exists
-        if os.path.exists(results_file):
-            df = pd.read_csv(results_file)
-        else:
-            df = pd.DataFrame(columns=['model_type', 'data_schema_version', 'accuracy'])
-        
-        # Remove any existing rows with the same model_type and schema version
-        # Convert data_schema_version to string to ensure type consistency
-        df['data_schema_version'] = df['data_schema_version'].astype(str)
-        mask = (df['model_type'] == model_type) & (df['data_schema_version'] == DATA_SCHEMA_VERSION)
-       
-        df = df[~mask]
-        
-        # Add new row
-        new_row = pd.DataFrame({
-            'model_type': [model_type],
-            'data_schema_version': [DATA_SCHEMA_VERSION],
-            'accuracy': [round(accuracy, 3)]
-        })
-        
-        df = pd.concat([df, new_row], ignore_index=True)
-        
-        # Save to CSV
-        df.to_csv(results_file, index=False)
-        
-    except Exception as e:
-        print(f"Error logging results for {model_type}: {e}")
-        import traceback
-        traceback.print_exc()
-
 class Logic(ABC):
     """Abstract base class for agent logic/strategy implementations."""
     
@@ -119,42 +78,7 @@ class Logic(ABC):
         if len(self.position_history) > self.max_history_length:
             self.position_history = self.position_history[-self.max_history_length:]
 
-    def _train_model(self, model_type: str, csv_file: str = "training_data.csv"):
-        """Train the model on the provided data."""
-        try:
-            # Load training data
-            df = pd.read_csv(csv_file)
-            print(f"Loaded {len(df)} training samples from {csv_file}")
-            
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal', 'goal_direction']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
-            # Split into train/test sets
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-            
-            # Train the model
-            self.model.fit(X_train, y_train)
-            
-            # Evaluate on test set
-            y_pred = self.model.predict(X_test)
-            accuracy = accuracy_score(y_test, y_pred)
-            print(f"{model_type} training completed. Test accuracy: {accuracy:.3f}")
-            
-            # Log results
-            log_model_results(model_type, accuracy)
-            
-        except FileNotFoundError:
-            print(f"Training data file {csv_file} not found. Model will not be available.")
-            self.model = None
-        except Exception as e:
-            print(f"Error training SVM model: {e}")
-            self.model = None
-    
     def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-
-
         
         # Check for loop before making any action decision
         if self._detect_loop(current_position):
@@ -248,8 +172,6 @@ class AStarLogic(Logic):
         return self._compute_astar_path(world, start, goal)
     
     def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
-
-
         print(f"current_position: {current_position}")
         print(f"sensors: {world.get_sensor_readings(current_position)}")
         print(f"distance_to_goal: {world.get_distance_to_goal(current_position)}")
@@ -298,8 +220,7 @@ class RandomForestLogic(Logic):
             random_state: Random seed for reproducibility
         """
         super().__init__()  # Initialize loop detection
-        self.model = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
-        self._train_model("RandomForest")
+        self.model = joblib.load("RandomForest.pkl")
 
     def reset(self):
         """Reset any internal state."""
@@ -319,13 +240,7 @@ class LogisticRegressionLogic(Logic):
             random_state: Random seed for reproducibility
         """
         super().__init__()  # Initialize loop detection
-        self.model = LogisticRegression(
-            multi_class='multinomial',
-            solver='lbfgs',
-            random_state=random_state,
-            max_iter=1000
-        )
-        self._train_model("LogisticRegression")
+        self.model = joblib.load("LogisticRegression.pkl")
    
     def reset(self):
         """Reset any internal state."""
@@ -345,12 +260,7 @@ class SVMLogic(Logic):
             random_state: Random seed for reproducibility
         """
         super().__init__()  # Initialize loop detection
-        self.model = SVC(
-            kernel=kernel,
-            random_state=random_state,
-            gamma='scale'
-        )
-        self._train_model("SVM")
+        self.model = joblib.load("SVM.pkl")
  
     def reset(self):
         """Reset any internal state."""
@@ -367,19 +277,16 @@ class NaiveBayesLogic(Logic):
             csv_file: Path to training data CSV file
         """
         super().__init__()  # Initialize loop detection
-        self.model = GaussianNB()
-        self._train_model("NaiveBayes")
+        self.model = joblib.load("NaiveBayes.pkl")
    
     def reset(self):
         """Reset any internal state."""
         super().reset()  # Reset loop detection
     
-      
-
 class KNNLogic(Logic):
     """K-Nearest Neighbors classifier logic implementation."""
     
-    def __init__(self, n_neighbors: int = 5):
+    def __init__(self):
         """
         Initialize KNN logic with training data.
         
@@ -388,14 +295,11 @@ class KNNLogic(Logic):
             n_neighbors: Number of neighbors to consider
         """
         super().__init__()  # Initialize loop detection
-        self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
-        self._train_model("KNN")
+        self.model = joblib.load("KNN.pkl")
    
     def reset(self):
         """Reset any internal state."""
         super().reset()  # Reset loop detection
-    
-       
 
 class XGBoostLogic(Logic):
     """XGBoost classifier logic implementation."""
@@ -411,13 +315,7 @@ class XGBoostLogic(Logic):
         """
         super().__init__()  # Initialize loop detection
         try:
-            import xgboost as xgb
-            self.model = xgb.XGBClassifier(
-                n_estimators=n_estimators, 
-                random_state=random_state,
-                eval_metric='mlogloss'
-            )
-            self._train_model("XGBoost")
+            self.model = joblib.load("XGBoost.pkl")
         except ImportError:
             print("XGBoost is not available. Install with: pip install xgboost")
             self.model = None
@@ -429,8 +327,6 @@ class XGBoostLogic(Logic):
     def reset(self):
         """Reset any internal state."""
         super().reset()  # Reset loop detection
-    
-       
 
 class NeuralNetworkLogic(Logic):
     """Neural Network (MLP) classifier logic implementation."""
@@ -447,13 +343,7 @@ class NeuralNetworkLogic(Logic):
             max_iter: Maximum number of iterations
         """
         super().__init__()  # Initialize loop detection
-        self.model = MLPClassifier(
-            hidden_layer_sizes=hidden_layer_sizes,
-            random_state=random_state,
-            max_iter=max_iter,
-            solver='adam'
-        )
-        self._train_model("NeuralNetwork")
+        self.model = joblib.load("NeuralNetwork.pkl")
 
     def reset(self):
         """Reset any internal state."""
