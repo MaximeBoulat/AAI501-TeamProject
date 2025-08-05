@@ -109,7 +109,7 @@ def get_goal_direction_index(current, goal):
     # Normalize to unit direction
     norm_dx = np.sign(dx)
     norm_dy = np.sign(dy)
-    for i, (ddy, ddx) in enumerate(DIRECTIONS):
+    for i, (ddx, ddy) in enumerate(DIRECTIONS):
         if (norm_dx, norm_dy) == (ddx, ddy):
             return i
     return None
