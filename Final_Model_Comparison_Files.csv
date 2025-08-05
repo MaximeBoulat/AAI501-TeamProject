@@ -1,8 +1,0 @@
-Random Forest Files,MLP Files
-inventory_robot.py,inventory_robot.py
-main_simulation.py,main_simulation.py
-robot_agent.py,robot_agent.py
-sensors.py,sensors.py
-simulate_robot_rf.py,simulate_robot_mlp.py
-store_map.py,store_map.py
-train_classifier_rf.py,train_classifier_mlp.py
