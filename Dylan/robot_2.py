@@ -96,7 +96,7 @@ def get_sensor_readings(world, pos):
 def get_action(from_pos, to_pos):
     dx = to_pos[0] - from_pos[0]
     dy = to_pos[1] - from_pos[1]
-    for i, (ddy, ddx) in enumerate(DIRECTIONS):
+    for i, (ddx, ddy) in enumerate(DIRECTIONS):
         if (dx, dy) == (ddx, ddy):
             return i
     return None
