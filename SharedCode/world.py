@@ -4,13 +4,12 @@ from typing import Tuple, List
 import math
 
 class World:
-    """Manages a 2D grid world with obstacles, start and goal positions."""
     
     # 8-directional movement: left, left+down, down, right+down, right, right+up, up, left+up
     DIRECTIONS = [(-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1), (-1, -1)]
     
     def __init__(self, grid: np.ndarray, start: Tuple[int, int], goal: Tuple[int, int]):
-        """Initialize world with grid, start and goal positions."""
+
         self.grid = grid
         self.start = start
         self.goal = goal
@@ -23,7 +22,6 @@ class World:
                     max_wall_length: int = 10, 
                     min_start_goal_distance: int = 8, 
                     seed: int = None):
-        """Create a random world with obstacles and walls."""
         if seed is not None:
             random.seed(seed)
             np.random.seed(seed)
@@ -78,13 +76,11 @@ class World:
         raise RuntimeError(f"Could not generate valid world after {max_attempts} attempts")
     
     def is_valid_position(self, x: int, y: int) -> bool:
-        """Check if position is within bounds and not blocked."""
         return (0 <= x < self.size and 
                 0 <= y < self.size and 
                 self.grid[y][x] == 0)
     
     def get_sensor_readings(self, position: Tuple[int, int]) -> List[int]:
-        """Get 8-directional sensor readings from given position."""
         readings = []
         x, y = position
         
@@ -106,15 +102,12 @@ class World:
         return readings
     
     def is_goal_reached(self, position: Tuple[int, int]) -> bool:
-        """Check if position has reached the goal."""
         return position == self.goal
     
     def get_distance_to_goal(self, position: Tuple[int, int]) -> float:
-        """Get Euclidean distance from position to goal."""
         return np.linalg.norm(np.subtract(self.goal, position))
     
     def get_goal_direction_radians(self, position: Tuple[int, int]) -> float:
-        """Get angle in radians from position to goal."""
         dx = self.goal[0] - position[0]
         dy = position[1] - self.goal[1]
         angle = math.atan2(dx, dy)  # dx first because 0° = north
@@ -123,7 +116,6 @@ class World:
 
     
     def get_neighbors(self, position: Tuple[int, int]) -> List[Tuple[int, int]]:
-        """Get all valid neighboring positions."""
         neighbors = []
         x, y = position
         
