@@ -16,11 +16,11 @@ class World:
         self.size = grid.shape[0]  # Assuming square grid
         
     @classmethod
-    def from_random(cls, size: int = 20, 
-                    obstacle_prob: float = 0.3, 
-                    wall_count: int = 5, 
-                    max_wall_length: int = 10, 
-                    min_start_goal_distance: int = 8, 
+    def from_random(cls, size: int, 
+                    obstacle_prob: float, 
+                    wall_count: int, 
+                    max_wall_length: int, 
+                    min_start_goal_distance: int, 
                     seed: int = None):
         if seed is not None:
             random.seed(seed)

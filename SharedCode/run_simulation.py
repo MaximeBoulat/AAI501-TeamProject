@@ -1,21 +1,23 @@
 from agent import Agent
 from world import World
 from renderer import PygameRenderer, Renderer
+from config import *
 
 from typing import Dict, Any, List
 import time
 
-from models import RandomForestModel
+from models import BaseModel, NeuralNetworkModel
+
     
-def run_simulation(num_runs: int, agent: Agent, world: World, renderer: Renderer, slow: bool = True) -> List[Dict[str, Any]]:
+def run_simulation(num_runs: int, model: BaseModel, renderer: Renderer, slow: bool = True) -> List[Dict[str, Any]]:
        
     for run_id in range(num_runs):
         print(f"\n=== Run {run_id + 1}/{num_runs} ===")
             
         # Generate new world
         try:
-            world = World.from_random()
-            agent.world = world
+            world = World.from_random(WORLD_SIZE, OBSTACLE_PROB, WALL_COUNT, WALL_MAX_LEN, MIN_START_GOAL_DISTANCE)
+            agent = Agent(world, model)
         except RuntimeError as e:
                 print(f"Failed to generate world for run {run_id}: {e}")
                 continue
@@ -69,13 +71,10 @@ def run_simulation(num_runs: int, agent: Agent, world: World, renderer: Renderer
 
 
 
-world = World.from_random()
+model = NeuralNetworkModel()
 
-model = RandomForestModel()
+model.from_file("NeuralNetwork")
 
-model.from_file("LogisticRegression")
-
-agent = Agent(world, model)
 renderer = PygameRenderer(cell_size=30, show_path_history=True, window_title="Robot Navigation")
 
-run_simulation(100, agent, world, renderer, True)
+run_simulation(100, model, renderer, True)

@@ -6,16 +6,7 @@ import os
 import math
 
 from world import World
-
-num_runs = 3000
-WORLD_SIZE = 20
-ATTEMPTS = 100
-WALL_COUNT = 5
-WALL_MAX_LEN = 10
-OBSTALCE_PROB = 0.3
-MIN_START_GOAL_DISTANCE = 8
-SEED = 42
-MAX_GOAL_DISTANCE = WORLD_SIZE * math.sqrt(2)
+from config import *
 
 # Set random seed for built-in random module
 random.seed(SEED)
@@ -57,7 +48,7 @@ def a_star(world, start, goal):
 
 def get_sensor_readings(world, pos):
     readings = []
-    for dy, dx in DIRECTIONS:
+    for dx, dy in DIRECTIONS:
         dist = 0
         x, y = pos[0], pos[1]
         while True:
@@ -141,7 +132,7 @@ def save_world_to_disk(world, run_id, output_dir="worlds"):
 def simulate_world(run_id, starting_timestamp):
     attempts = 0
     while attempts < ATTEMPTS:
-        world = World.from_random(WORLD_SIZE, OBSTALCE_PROB, WALL_COUNT, WALL_MAX_LEN, MIN_START_GOAL_DISTANCE)
+        world = World.from_random(WORLD_SIZE, OBSTACLE_PROB, WALL_COUNT, WALL_MAX_LEN, MIN_START_GOAL_DISTANCE)
         start = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
         goal = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
 
@@ -165,7 +156,7 @@ def simulate_world(run_id, starting_timestamp):
 global_timestamp = 0
 all_training_data = []
 
-for run_id in range(num_runs):
+for run_id in range(NUM_RUNS):
     run_data, global_timestamp = simulate_world(run_id, global_timestamp)
     all_training_data.extend(run_data)
 

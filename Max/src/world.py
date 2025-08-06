@@ -17,8 +17,8 @@ class World:
         self.size = grid.shape[0]  # Assuming square grid
         
     @classmethod
-    def from_random(cls, size: int = 20, obstacle_prob: float = 0.3, 
-                   wall_count: int = 5, max_wall_length: int = 10, 
+    def from_random(cls, size: int = 20, obstacle_prob: float = 0.1, 
+                   wall_count: int = 0, max_wall_length: int = 10, 
                    min_start_goal_distance: int = 8, seed: int = None):
         """Create a random world with obstacles and walls."""
         if seed is not None:

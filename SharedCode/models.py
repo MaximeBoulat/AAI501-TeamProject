@@ -31,14 +31,27 @@ import joblib
 
 DATA_SCHEMA_VERSION = "2.0"
 
+USE_SCALER = True
 
 class BaseModel(ABC):
+    
+    def __init__(self):
+        self.model = None
+        self.scaler = None
 
     def from_file(self, model_type: str):
-        model_filename = f"models/{model_type}.pkl"
+        model_dir = f"models/{model_type}"
+        model_filename = f"{model_dir}/model.pkl"
+        scaler_filename = f"{model_dir}/scaler.pkl"
         try:
             self.model = joblib.load(model_filename)
             print(f"Loaded model from {model_filename}")
+            
+            if USE_SCALER:
+                self.scaler = joblib.load(scaler_filename)
+                print(f"Loaded scaler from {scaler_filename}")
+           
+            
         except Exception as e:
             print(f"Error loading model {model_type}: {e}")
         
@@ -49,34 +62,45 @@ class BaseModel(ABC):
             # Load training data
             df = pd.read_csv(csv_file)
             print(f"Loaded {len(df)} training samples from {csv_file}")
-            
+
+           
             # Prepare features: 8 sensor readings + distance_to_goal
             feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal', 'goal_direction']
             X = df[feature_columns].values
             y = df['action'].values
             
+
             # Split into train/test sets
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-            # Scale the data
-            scaler = StandardScaler()
-            X_train_scaled = scaler.fit_transform(X_train)
-            X_test_scaled = scaler.transform(X_test)
-            
+            if USE_SCALER:
+                # Scale the data
+                self.scaler = StandardScaler()
+                X_train = self.scaler.fit_transform(X_train)
+                X_test = self.scaler.transform(X_test)
+
             # Train the model
-            self.model.fit(X_train_scaled, y_train)
+            self.model.fit(X_train, y_train)
 
             # Evaluate on test set
-            y_pred = self.model.predict(X_test_scaled)
+            y_pred = self.model.predict(X_test)
             accuracy = accuracy_score(y_test, y_pred)
             print(f"{model_type} training completed. Test accuracy: {accuracy:.3f}")
 
-            # save the model to the file system
-            os.makedirs("models", exist_ok=True)
-            model_filename = f"models/{model_type}.pkl"
+            # save the model and scaler to the file system
+            model_dir = f"models/{model_type}"
+            os.makedirs(model_dir, exist_ok=True)
+            model_filename = f"{model_dir}/model.pkl"
+            scaler_filename = f"{model_dir}/scaler.pkl"
             try:
                 joblib.dump(self.model, model_filename)
                 print(f"Saved trained model to {model_filename}")
+                
+                if USE_SCALER:
+                    joblib.dump(self.scaler, scaler_filename)
+                    print(f"Saved scaler to {scaler_filename}")
+
+                
             except Exception as e:
                 print(f"Error saving model {model_type}: {e}")
             
@@ -90,7 +114,7 @@ class BaseModel(ABC):
     
     def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
         
-        if self.model is None:
+        if self.model is None or (USE_SCALER and self.scaler is None):
             return None
             
         # Get current sensor readings and distance
@@ -100,6 +124,10 @@ class BaseModel(ABC):
         
         # Prepare input for model
         features = np.array([sensors + [distance_to_goal, goal_direction]])
+        
+        if USE_SCALER:
+            # Scale the features using the saved scaler
+            features = self.scaler.transform(features)
         
         # Get model prediction
         try:
@@ -202,15 +230,3 @@ class NeuralNetworkModel(BaseModel):
         self._train_model("NeuralNetwork")
         
 
-
-
-
-
-
-RandomForestModel()
-LogisticRegressionModel()
-SVMModel()
-NaiveBayesModel()
-KNNModel()
-XGBoostModel()
-NeuralNetworkModel()
