@@ -10,12 +10,7 @@ August 11, 2025
 
 Autonomous navigation through complex environments is a fundamental challenge in robotics and artificial intelligence.  This project explores whether a robot can learn to navigate in a randomly generated two-dimensional world with obstacles using supervised learning.  A world generator creates 30×30 grids populated with single-tile obstacles and random linear walls; an agent equipped with eight radial sensors receives the distance to the nearest obstacle in each direction together with its Euclidean distance to the goal.  An A* path-planner produces optimal actions, which serve as the supervisory signal for training.  We perform exploratory data analysis to understand the distribution of sensor readings and evaluate multiple classification algorithms—including Random Forest, XGBoost, logistic regression, support vector machines, Naïve Bayes, K-nearest neighbors and a neural network—on the resulting dataset.  
 
-We find that ________________
-
-BEFORE: all models struggle to exceed 0.37 accuracy due to severe information asymmetry and shifting-signals problems inherent in the data. 
-
-AFTER: a wide variety of machine learning models are capable of generalizing obstacle avoidance and goal seeking behavior given that the right features are present in the training data.
-
+We find that a wide variety of machine learning models are capable of generalizing obstacle avoidance and goal seeking behavior with the right features.
 
 Our analysis draws on related work in partially observable Markov decision processes, imitation learning and differentiable planning to contextualize the limitations and recommend future directions.
 
@@ -34,9 +29,17 @@ The final team project in our applied artificial intelligence course asks us to 
 4. Train and evaluate different machine-learning algorithms on the navigation problem.
 5. Relate our findings to the broader literature on learning-based navigation and imitation learning.
 
-## 2 Methodology
+# 2. Literature review
 
-### 2.1 World generation and sensors
+The difficulty of learning navigation policies from supervised data is well recognized in the literature.  Pomerleau’s ALVINN system imitated human steering by training on camera and laser readings【650549137831343†L85-L91】; while promising, it worked only on simple road scenes and suffered when the environment changed.  Kaelbling, Littman and Cassandra formalized POMDPs, highlighting the challenge of acting under partial observability【141877599114902†L128-L145】.  Later, Ross et al. introduced DAgger, an imitation-learning algorithm that addresses distribution shift by iteratively collecting expert feedback along the learner’s own trajectories【725851254557814†L8-L24】.  
+
+Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time.  Such recurrent architectures could enable our agent to accumulate information about the goal’s direction across multiple steps.  Tamar et al. introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration【380127289722745†L49-L58】.  VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning.  More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
+
+Codevilla et al. show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes.  Therefore, evaluation metrics should include path efficiency, collision rates and goal success rather than solely action prediction accuracy.  Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
+
+## 3. Methodology
+
+### 3.1 World generation and sensors
 
 The environment is a square grid of size 20×20.  A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.2`) and adds several horizontal or vertical walls of random lengths.  The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle.  Each simulation generates a new world, ensuring a diverse set of layouts.  The agent can move in eight directions corresponding to the Moore neighborhood (left, left+down, down, right+down, right, right+up, up, left+up).
 
@@ -49,31 +52,11 @@ We then added goal direction as computed angle between the agent and the goal to
 We also explored normalizing the direction to the goal as a unit vector, which offered a modest but consistent performance boost by encoding directional intent in a format that complements the sensor layout.
 
 
-<Max: here we need to branch>
-
-#### Dylan
-
-With these enhancements, the final raw state representation consisted of sensor_0 to sensor_7, the distance_to_goal, and optionally, a normalized direction vector to the goal. A tuple of the agent’s coordinates was logged for reference but not used during training.
-
-### Max
-
-With these enhancements, the final raw state representation consisted of sensor_0 to sensor_7, the distance_to_goal, and the goal_direction.
-
-The target variable initially remained the action chosen by A*—an integer from 0 to 7 representing one of the eight possible moves. To investigate whether this discrete classification setup limited learning performance, we also experimented with a continuous formulation of the target variable, such as using the unit direction vector of the optimal move (ŷ as a 2D vector). This change aimed to provide a smoother learning signal and encourage better generalization, particularly in ambiguous or edge-case states.
-
-### 2.1 Choosing Appropriate Algorithm Structures (Can move to model section?)
-
-<Max: I would move this to model selection>
-
-Selecting the right structure for the various AI selected models, for example, the neural network architecture is a critical part of our methodology. The structure of the network—including the number of layers, the number of units per layer, activation functions, and regularization strategies—can significantly affect the model's ability to learn from the input features and generalize to new environments.
-
-We approached architecture selection empirically, starting with simple fully connected (feedforward) networks and adjusting based on performance. Shallower networks tended to underfit the problem, especially once we introduced more nuanced features like distance_to_goal and normalized direction vectors. Deeper architectures provided the capacity to model more complex relationships between inputs and the optimal actions, but came with increased risk of overfitting. We mitigated this using techniques such as dropout, early stopping, and batch normalization.
-The choice of output representation (categorical vs. continuous ŷ) also influenced architecture decisions. For classification targets, a softmax output layer paired with cross-entropy loss was appropriate. For continuous direction vectors, we used a linear output layer and optimized with mean squared error (MSE). In both cases, the architecture had to align with the nature of the prediction target to ensure stable and effective learning.
-
-This iterative tuning of network structure was essential to achieving reliable performance and forms a core part of our methodology.
+With these enhancements, the final raw state representation consisted of sensor_0 to sensor_7, the distance_to_goal, and the goal_direction and the target variable was the action chosen by A*—an integer from 0 to 7 representing one of the eight possible moves. 
 
 
-### 2.2 Data generation using A*
+
+### 3.2 Data generation using A*
 
 A* search uses a priority queue to explore nodes with the lowest estimated total cost (the cost so far plus a heuristic).  We use the Euclidean distance to the goal as the heuristic.  When constructing the dataset, we run A* on each randomly generated world to compute an optimal path from the start to the goal.  For every step along the path, we record the timestamp, run identifier, current position, the eight sensor readings, the Euclidean distance to the goal, the goal direction and the action taken.  Listing 1 summarizes the data schema.
 
@@ -98,14 +81,10 @@ We generated multiple batches of data:
 
 
 
-### 2.3 Exploratory data analysis
+### 3.3 Exploratory data analysis
 
-<Max: This whole section needs to be reworked>
 
-AFTER:
-=================
-
-#### Distributions
+#### 3.3.1 Distributions
 
 We performed exploratory data analysis (EDA) on the dataset to understand feature distributions and potential issues.  
 
@@ -117,65 +96,36 @@ We observe that all sensor readings, and distance to goal exhibit a gamma (?) di
 
 The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The relative uniformity of the distribution across class labels stands to give a good training signal for each class. 
 
-#### Run level variability
+#### 3.3.2 Run level variability
 
 ![](Resources/RunAnalysis.png)
 
+// TODO: Expand on that
 
-
-BEFORE:
-==================
-
-
-Figure 1 shows boxplots of the sensor readings by action; the distribution of distances varies across sensors and actions, with some directions frequently returning small values (closer obstacles).  The correlation matrix in Figure 2 reveals weak correlations among most sensors and between sensors and the distance to the goal, suggesting that each sensor provides distinct information about the environment.
-
-![Sensor readings by action, showing variation across actions and sensors]({{file-Dp6SFMpv6jUUT58QCRAQxR}})
-
-**Figure 1.** 
-Boxplots of sensor readings are grouped by action.  Each subplot corresponds to one of the eight sensors; the vertical axis is distance to the nearest obstacle.  The widespread indicates that some actions are chosen across a broad range of sensor values.
-
-![Correlation matrix showing weak correlations among sensors and the distance to goal]({{file-8SfSKzYvLD8RXyKkEw6j8t}})
-
-**Figure 2.** 
-Correlation matrix of the eight sensor features and the distance to the goal.  Most sensor pairs exhibit low correlation (<0.1), implying that each direction provides largely independent information.  The distance to the goal correlates modestly (≈0.25) with some sensors but not strongly enough to resolve ambiguities.
-
-We also examined the frequency of actions.  The distribution is highly imbalanced: approximately 60 % of actions correspond to moves that keep the agent roughly aligned with the direct line to the goal.  Rare actions such as backtracking occur infrequently.  This class imbalance affects learning, as models may focus on the majority actions and neglect rare but important maneuvers.
-
-
-==================
-
-### 2.4 Shifting-signals problem and information asymmetry
+### 3.4 Shifting-signals problem and information asymmetry
 
 An important observation from EDA is that identical sensor readings can correspond to different optimal actions depending on the global arrangement of obstacles and the relative position of the goal.  For example, two states with the same local obstacles may require moving northeast in one case and southwest in another if the goal lies in different directions.  A* can resolve this because it has global knowledge of the grid, but the machine-learning model sees only local distances and a scalar goal distance.  This **information asymmetry** leads to **shifting signals**: identical inputs with opposite labels.
 
-To quantify this phenomenon, we grouped training samples by their eight sensor values (ignoring the distance to goal) and counted how many unique actions were labelled as optimal within each group.  Approximately 72 % of sensor configurations were associated with two or more different actions; some had up to four distinct labels.  Consequently, no deterministic function can perfectly map the sensors to the optimal action.  This violation of the i.i.d. assumption is a known failure mode of **behavior cloning**, where an agent learns from expert demonstrations but never receives corrective feedback for states outside the expert’s distribution.  Ross et al. proposed DAgger (Dataset Aggregation), an imitation-learning algorithm that mitigates distributional shift by collecting expert feedback along the learner’s own trajectories【725851254557814†L8-L24】.
+To quantify this phenomenon, we grouped training samples by sensor value patterns, and counted the percentage of unique patterns which had conflicting action labels with and without goal direction. We found that 31.7% of the patterns had conflicts without goal direction whereas only 8.8% had conflicts with goal direction. 
 
+To help visualize the problem further, we performed a full fledged feature uniqueness analysis:
 
-#### Feature importance analysis
-
-##### Before goal direction
+without goal direction:
 
 ![](Resources/GoalDirectionBefore.png)
 
-##### After goal direction
+with goal direction:
 
 ![](Resources/GoalDirectionAfter.png)
 
 
 
 
-### 2.5 Model selection and training
+# 4 Model selection and training
 
-//MAX: Here I would branch: Max's model selection, Dylan's model selection. I would put the Choosing Appropriate Algorith, structures section in Dylan's Model Selection
+## 4.1 Overview
 
 We evaluated a suite of classification algorithms using the scikit-learn and XGBoost libraries.  Each model was trained to predict the optimal action given the eight sensor distances and the distance to the goal.  We used a stratified 80/20 train–test split, ensuring that each action class was proportionally represented in both sets.  The models and their training hyper-parameters were:
-1. **Random Forest** with 100 trees and default settings.
-2. **XGBoost** with 100 boosting rounds and `mlogloss` evaluation metric.
-3. **Logistic regression** (multinomial, solver = LBFGS, `max_iter` = 1000).
-4. **Support vector machine** with radial basis function (RBF) kernel.
-5. **Naïve Bayes** (Gaussian).
-6. **K-nearest neighbors** with `k` = 5 and Euclidean distance.
-7. **Neural network** (MLP) with two hidden layers (100 and 50 neurons) and ReLU activations.
 
 **Random Forest** – Chosen for its robustness and ability to model non-linear feature interactions without extensive preprocessing. Its ensemble nature makes it a strong baseline for tabular data.
 
@@ -191,32 +141,19 @@ We evaluated a suite of classification algorithms using the scikit-learn and XGB
 
 **Neural Network (MLP)** – A multi-layer perceptron with two hidden layers (100 and 50 neurons) using ReLU activations. This architecture provides sufficient capacity to model complex non-linear patterns in the sensor data.
 
-During training, we observed that the neural network sometimes failed to converge within 500 iterations.  We also experimented with deeper networks and varying learning rates but saw little improvement.
+## 4.2 Choosing Appropriate Algorithm Structures
+
+Selecting the right structure for the various AI selected models, for example, the neural network architecture is a critical part of our methodology. The structure of the network—including the number of layers, the number of units per layer, activation functions, and regularization strategies—can significantly affect the model's ability to learn from the input features and generalize to new environments.
+
+We approached architecture selection empirically, starting with simple fully connected (feedforward) networks and adjusting based on performance. Shallower networks tended to underfit the problem, especially once we introduced more nuanced features like distance_to_goal and normalized direction vectors. Deeper architectures provided the capacity to model more complex relationships between inputs and the optimal actions, but came with increased risk of overfitting. We mitigated this using techniques such as dropout, early stopping, and batch normalization.
+The choice of output representation (categorical vs. continuous ŷ) also influenced architecture decisions. For classification targets, a softmax output layer paired with cross-entropy loss was appropriate. For continuous direction vectors, we used a linear output layer and optimized with mean squared error (MSE). In both cases, the architecture had to align with the nature of the prediction target to ensure stable and effective learning.
+
+This iterative tuning of network structure was essential to achieving reliable performance and forms a core part of our methodology.
 
 
-### 2.6 Opportunities for selecting other Models
-
-//MAX: I would move this to 5. Discussion
-
-While these models provide a solid baseline, there are alternative approaches better tailored to sequential or spatial decision-making tasks:
-
-**Convolutional Neural Networks (CNNs)** – If we restructure the sensor data into a spatial grid or local map, CNNs could better exploit local patterns and symmetry in navigation tasks.
-
-**Recurrent Neural Networks (RNNs) or LSTMs** – These would be useful if the agent's decision depends on temporal history (e.g., previous states or actions), which is common in partially observable environments.
-
-**Graph Neural Networks (GNNs)** – If the environment is represented as a graph (e.g., a grid map), GNNs can effectively learn over topological structures and support reasoning about obstacles and connectivity.
-
-**Reinforcement Learning Models (e.g., DQN, PPO)** – These could directly learn from reward signals in a simulation loop rather than imitating A* actions, which might produce more adaptive policies.
-
-For our current dataset and imitation-learning setup, tree-based models like XGBoost and neural networks like MLP performed well, but if the system is extended to incorporate richer spatial or temporal context, these advanced architectures could yield further improvements.
+## 5 Results
 
 
-## 3 Results
-
-// MAX: Here we should branch: Max: results and interpretation of results, Dylan: results and interpretation of results
-
-
-### 3.1 Max's results + interpretation
 
 | Model | Version 1.1 Accuracy | Version 2.2 Accuracy | Version 2.3 Accuracy |
 |-------|----------------------|----------------------|----------------------|
@@ -244,27 +181,11 @@ It is interesting to note that even though the trained models were able to emula
 ![](Resources/Sad.png)
 
 
-
-### 3.2 Dylan's results + interpretation
-
-
-
-## 4 Related work
-
-
-The difficulty of learning navigation policies from supervised data is well recognized in the literature.  Pomerleau’s ALVINN system imitated human steering by training on camera and laser readings【650549137831343†L85-L91】; while promising, it worked only on simple road scenes and suffered when the environment changed.  Kaelbling, Littman and Cassandra formalized POMDPs, highlighting the challenge of acting under partial observability【141877599114902†L128-L145】.  Later, Ross et al. introduced DAgger, an imitation-learning algorithm that addresses distribution shift by iteratively collecting expert feedback along the learner’s own trajectories【725851254557814†L8-L24】.  Our shifting-signals problem is a concrete manifestation of the same issue: data generated by following an expert does not cover states that the learner might encounter.
-
-Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time.  Such recurrent architectures could enable our agent to accumulate information about the goal’s direction across multiple steps.  Tamar et al. introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration【380127289722745†L49-L58】.  VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning.  More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
-
-Other research on autonomous driving emphasizes the gap between high step-wise action accuracy and actual performance.  Codevilla et al. show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes.  Therefore, evaluation metrics should include path efficiency, collision rates and goal success rather than solely action prediction accuracy.  Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
-
-## 5 Discussion
-
-//MAX: this needs to be reworked and made to reflect the combined topics between Max and Dylan's research
+## 6. Discussion
 
 The experiments reveal several insights about using supervised learning to mimic a path-planner in a partially observable environment:
 
-1. **Information asymmetry makes behavior cloning unsuitable.**  The agent’s sensors provide only local glimpses of the environment, whereas A* has complete global knowledge.  This gap leads to inconsistent labels for identical inputs.  As a result, the data violates the i.i.d. assumption underlying most supervised algorithms, limiting the achievable accuracy.
+1. **Information asymmetry makes behavior cloning unsuitable in the absence of additional context.**  The agent’s sensors provide only local glimpses of the environment, whereas A* has complete global knowledge.  This gap leads to inconsistent labels for identical inputs. Adding goal direction as a feature solved that.
 
 2. **Imbalanced action distribution skews learning.**  Certain actions (e.g., moving straight toward the goal) dominate the dataset, causing models to over-predict those classes and under-learn rare but necessary actions such as detours or backtracking.  Techniques such as class weighting or sampling could mitigate this but do not address the root cause.
 
@@ -279,7 +200,19 @@ The experiments reveal several insights about using supervised learning to mimic
 * **Augment features** with the relative angle to the goal rather than just the Euclidean distance; this provides directional context without revealing the entire map.
 * **Incorporate memory** using recurrent networks (e.g., LSTM) to aggregate information across multiple steps.  Such models can build an implicit belief about the environment, analogous to DRQN for POMDPs.
 * **Use imitation-learning algorithms such as DAgger**, which query the expert for additional labels when the learner deviates.  This ensures that data covers states likely under the learned policy and reduces distribution shift.
-* **Explore reinforcement learning** with intrinsic exploration rewards, allowing the agent to learn from trial and error rather than purely supervised labels.  Combining model-free RL with mapping modules (as in Neural Map) may yield better navigation strategies.
+
+
+* **Explore alternative models**
+
+**Convolutional Neural Networks (CNNs)** – If we restructure the sensor data into a spatial grid or local map, CNNs could better exploit local patterns and symmetry in navigation tasks.
+
+**Recurrent Neural Networks (RNNs) or LSTMs** – These would be useful if the agent's decision depends on temporal history (e.g., previous states or actions), which is common in partially observable environments.
+
+**Graph Neural Networks (GNNs)** – If the environment is represented as a graph (e.g., a grid map), GNNs can effectively learn over topological structures and support reasoning about obstacles and connectivity.
+
+**Reinforcement Learning Models (e.g., DQN, PPO)** – These could directly learn from reward signals in a simulation loop rather than imitating A* actions, which might produce more adaptive policies.
+
+For our current dataset and imitation-learning setup, tree-based models like XGBoost and neural networks like MLP performed well, but if the system is extended to incorporate richer spatial or temporal context, these advanced architectures could yield further improvements.
 
 ## 6 Conclusion
 
