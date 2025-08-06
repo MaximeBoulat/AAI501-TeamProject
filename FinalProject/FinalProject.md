@@ -121,15 +121,6 @@ The distribution of the action variable is well balanced across all 8 possible a
 
 ![](Resources/RunAnalysis.png)
 
-#### Feature importance analysis
-
-##### Before goal direction
-
-![](Resources/GoalDirectionBefore.png)
-
-##### After goal direction
-
-![](Resources/GoalDirectionAfter.png)
 
 
 BEFORE:
@@ -158,6 +149,20 @@ We also examined the frequency of actions.  The distribution is highly imbalance
 An important observation from EDA is that identical sensor readings can correspond to different optimal actions depending on the global arrangement of obstacles and the relative position of the goal.  For example, two states with the same local obstacles may require moving northeast in one case and southwest in another if the goal lies in different directions.  A* can resolve this because it has global knowledge of the grid, but the machine-learning model sees only local distances and a scalar goal distance.  This **information asymmetry** leads to **shifting signals**: identical inputs with opposite labels.
 
 To quantify this phenomenon, we grouped training samples by their eight sensor values (ignoring the distance to goal) and counted how many unique actions were labelled as optimal within each group.  Approximately 72 % of sensor configurations were associated with two or more different actions; some had up to four distinct labels.  Consequently, no deterministic function can perfectly map the sensors to the optimal action.  This violation of the i.i.d. assumption is a known failure mode of **behavior cloning**, where an agent learns from expert demonstrations but never receives corrective feedback for states outside the expert’s distribution.  Ross et al. proposed DAgger (Dataset Aggregation), an imitation-learning algorithm that mitigates distributional shift by collecting expert feedback along the learner’s own trajectories【725851254557814†L8-L24】.
+
+
+#### Feature importance analysis
+
+##### Before goal direction
+
+![](Resources/GoalDirectionBefore.png)
+
+##### After goal direction
+
+![](Resources/GoalDirectionAfter.png)
+
+
+
 
 ### 2.5 Model selection and training
 
