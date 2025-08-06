@@ -5,15 +5,8 @@ import csv
 import os
 import math
 
-num_runs = 3000
-WORLD_SIZE = 20
-ATTEMPTS = 100
-WALL_COUNT = 5
-WALL_MAX_LEN = 10
-OBSTALCE_PROB = 0.3
-MIN_START_GOAL_DISTANCE = 8
-SEED = 42
-MAX_GOAL_DISTANCE = WORLD_SIZE * math.sqrt(2)
+from world import World
+from config import *
 
 # Set random seed for built-in random module
 random.seed(SEED)
@@ -21,39 +14,13 @@ random.seed(SEED)
 # Set random seed for NumPy
 np.random.seed(SEED)
 
-              #0 = left, 1 = left+down, 2 = down, 3=right+down, 4=right, 5=right+up,  6=up,   7=left+up 
+#0 = left, 1 = left+down, 2 = down, 3=right+down, 4=right, 5=right+up,  6=up,   7=left+up 
 DIRECTIONS = [(-1, 0),   (-1, 1),      (0, 1),   (1, 1),        (1, 0),  (1, -1),    (0, -1), (-1, -1)]
 
-def create_world(size=WORLD_SIZE, obstacle_prob=OBSTALCE_PROB, wall_count=WALL_COUNT, max_wall_length=WALL_MAX_LEN):
-    world = np.zeros((size, size), dtype=int)
-    
-    # Random single-tile obstacles
-    for y in range(size):
-        for x in range(size):
-            if random.random() < obstacle_prob:
-                world[y][x] = 1
-
-    # Add horizontal or vertical walls
-    for _ in range(wall_count):
-        is_horizontal = random.choice([True, False])
-        wall_length = random.randint(3, max_wall_length)
-        
-        if is_horizontal:
-            y = random.randint(0, size - 1)
-            x_start = random.randint(0, size - wall_length)
-            for i in range(wall_length):
-                world[y][x_start + i] = 1
-        else:
-            x = random.randint(0, size - 1)
-            y_start = random.randint(0, size - wall_length)
-            for i in range(wall_length):
-                world[y_start + i][x] = 1
-
-    return world
 
 
 def is_valid(world, x, y):
-    return 0 <= x < world.shape[1] and 0 <= y < world.shape[0] and world[y][x] == 0
+    return 0 <= x < world.size and 0 <= y < world.size and world.grid[y][x] == 0
 
 def a_star(world, start, goal):
     open_set = []
@@ -79,19 +46,6 @@ def a_star(world, start, goal):
 
     return []
 
-def get_sensor_readings(world, pos):
-    readings = []
-    for dy, dx in DIRECTIONS:
-        dist = 0
-        x, y = pos[0], pos[1]
-        while True:
-            x += dx
-            y += dy
-            dist += 1
-            if not (0 <= x < world.shape[1] and 0 <= y < world.shape[0]) or world[y][x] == 1:
-                break
-        readings.append(dist)
-    return readings
 
 def get_action(from_pos, to_pos):
     dx = to_pos[0] - from_pos[0]
@@ -126,7 +80,7 @@ def generate_training_data(world, path, run_id, starting_timestamp):
     data = []
     timestamp = starting_timestamp
     for i in range(len(path) - 1):
-        sensors = get_sensor_readings(world, path[i])
+        sensors = world.get_sensor_readings(path[i])
         action = get_action(path[i], path[i + 1])
         if action is not None:
             remaining = np.linalg.norm(np.subtract(path[-1], path[i]))
@@ -136,10 +90,10 @@ def generate_training_data(world, path, run_id, starting_timestamp):
     return data, timestamp
 
 def print_world(world, path, start, goal):
-    display = np.full(world.shape, ".", dtype=str)
-    for y in range(world.shape[0]):
-        for x in range(world.shape[1]):
-            if world[y][x] == 1:
+    display = np.full(world.grid.shape, ".", dtype=str)
+    for y in range(world.size):
+        for x in range(world.size):
+            if world.grid[y][x] == 1:
                 display[y][x] = "#"
     for (x, y) in path:
         if (x, y) != start and (x, y) != goal:
@@ -155,17 +109,17 @@ def save_world_to_disk(world, run_id, output_dir="worlds"):
     os.makedirs(output_dir, exist_ok=True)
     
     # Save as .npy (binary format)
-    np.save(os.path.join(output_dir, f"world_{run_id}.npy"), world)
+    np.save(os.path.join(output_dir, f"world_{run_id}.npy"), world.grid)
     
     # Optional: Save as text for inspection
     with open(os.path.join(output_dir, f"world_{run_id}.txt"), "w") as f:
-        for row in world:
+        for row in world.grid:
             f.write(" ".join(str(cell) for cell in row) + "\n")
 
 def simulate_world(run_id, starting_timestamp):
     attempts = 0
     while attempts < ATTEMPTS:
-        world = create_world(size=WORLD_SIZE, obstacle_prob=OBSTALCE_PROB, wall_count=WALL_COUNT, max_wall_length=WALL_MAX_LEN)
+        world = World.from_random(WORLD_SIZE, OBSTACLE_PROB, WALL_COUNT, WALL_MAX_LEN, MIN_START_GOAL_DISTANCE)
         start = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
         goal = (random.randint(0, WORLD_SIZE - 1), random.randint(0, WORLD_SIZE - 1))
 
@@ -189,12 +143,12 @@ def simulate_world(run_id, starting_timestamp):
 global_timestamp = 0
 all_training_data = []
 
-for run_id in range(num_runs):
+for run_id in range(NUM_RUNS):
     run_data, global_timestamp = simulate_world(run_id, global_timestamp)
     all_training_data.extend(run_data)
 
 # === Save All Runs to CSV ===
-with open("training_data_2.csv", "w", newline="") as f:
+with open("training_data.csv", "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow([
         "timestamp", "run_id",

@@ -15,6 +15,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 
+from world import World
+
+import joblib
+
 
 # Data schema version for tracking
 
@@ -27,46 +31,79 @@ from sklearn.preprocessing import StandardScaler
 
 DATA_SCHEMA_VERSION = "2.0"
 
+USE_SCALER = True
 
 class BaseModel(ABC):
+    
+    def __init__(self):
+        self.model = None
+        self.scaler = None
 
-    def _train_model(self, model_type: str, csv_file: str = "training_data_2.csv"):
+    def from_file(self, model_type: str):
+        model_dir = f"models/{model_type}"
+        model_filename = f"{model_dir}/model.pkl"
+        scaler_filename = f"{model_dir}/scaler.pkl"
+        try:
+            self.model = joblib.load(model_filename)
+            print(f"Loaded model from {model_filename}")
+            
+            if USE_SCALER:
+                self.scaler = joblib.load(scaler_filename)
+                print(f"Loaded scaler from {scaler_filename}")
+           
+            
+        except Exception as e:
+            print(f"Error loading model {model_type}: {e}")
+        
+
+    def _train_model(self, model_type: str, csv_file: str = "training_data.csv"):
    
         try:
             # Load training data
             df = pd.read_csv(csv_file)
             print(f"Loaded {len(df)} training samples from {csv_file}")
-            
+
+           
             # Prepare features: 8 sensor readings + distance_to_goal
             feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal', 'goal_direction']
             X = df[feature_columns].values
             y = df['action'].values
             
+
             # Split into train/test sets
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-            # Scale the data
-            scaler = StandardScaler()
-            X_train_scaled = scaler.fit_transform(X_train)
-            X_test_scaled = scaler.transform(X_test)
-            
-            # Train the model
-            self.model.fit(X_train_scaled, y_train)
+            if USE_SCALER:
+                # Scale the data
+                self.scaler = StandardScaler()
+                X_train = self.scaler.fit_transform(X_train)
+                X_test = self.scaler.transform(X_test)
 
-            # Save model to disk
-            model_filename = f"{model_type}.pkl"
-            try:
-                joblib.dump(self.model, model_filename)
-                print(f"Saved trained model to {model_filename}")
-            except Exception as e:
-                print(f"Error saving model {model_type}: {e}")    
+            # Train the model
+            self.model.fit(X_train, y_train)
 
             # Evaluate on test set
-            y_pred = self.model.predict(X_test_scaled)
+            y_pred = self.model.predict(X_test)
             accuracy = accuracy_score(y_test, y_pred)
             print(f"{model_type} training completed. Test accuracy: {accuracy:.3f}")
 
-            log_model_results(model_type, accuracy)
+            # save the model and scaler to the file system
+            model_dir = f"models/{model_type}"
+            os.makedirs(model_dir, exist_ok=True)
+            model_filename = f"{model_dir}/model.pkl"
+            scaler_filename = f"{model_dir}/scaler.pkl"
+            try:
+                joblib.dump(self.model, model_filename)
+                print(f"Saved trained model to {model_filename}")
+                
+                if USE_SCALER:
+                    joblib.dump(self.scaler, scaler_filename)
+                    print(f"Saved scaler to {scaler_filename}")
+
+                
+            except Exception as e:
+                print(f"Error saving model {model_type}: {e}")
+            
             
         except FileNotFoundError:
             print(f"Training data file {csv_file} not found. Model will not be available.")
@@ -75,12 +112,42 @@ class BaseModel(ABC):
             print(f"Error training SVM model: {e}")
             self.model = None
     
+    def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
         
+        if self.model is None or (USE_SCALER and self.scaler is None):
+            return None
+            
+        # Get current sensor readings and distance
+        sensors = world.get_sensor_readings(current_position)
+        distance_to_goal = world.get_distance_to_goal(current_position)
+        goal_direction = world.get_goal_direction_radians(current_position)
+        
+        # Prepare input for model
+        features = np.array([sensors + [distance_to_goal, goal_direction]])
+        
+        if USE_SCALER:
+            # Scale the features using the saved scaler
+            features = self.scaler.transform(features)
+        
+        # Get model prediction
+        try:
+            action = self.model.predict(features)[0]
+
+            print(f"action: {action}")
+            
+            # Validate action is in valid range
+            if 0 <= action <= 7:
+                return int(action)
+        except Exception as e:
+            print(f"prediction error: {e}")
+        
+        return None
+
         
 
 class RandomForestModel(BaseModel):
     
-    def __init__(self, n_estimators: int = 100, random_state: int = 42):
+    def train_model(self, n_estimators: int = 100, random_state: int = 42):
 
         self.model = RandomForestClassifier(n_estimators=n_estimators, random_state=random_state)
         self._train_model("RandomForest")
@@ -88,7 +155,7 @@ class RandomForestModel(BaseModel):
 
 class LogisticRegressionModel(BaseModel):
     
-    def __init__(self, random_state: int = 42):
+    def train_model(self, random_state: int = 42):
     
         self.model = LogisticRegression(
             multi_class='multinomial',
@@ -101,7 +168,7 @@ class LogisticRegressionModel(BaseModel):
 
 class SVMModel(BaseModel):
 
-    def __init__(self, kernel: str = 'rbf', random_state: int = 42):
+    def train_model(self, kernel: str = 'rbf', random_state: int = 42):
 
         self.model = SVC(
             kernel=kernel,
@@ -114,7 +181,7 @@ class SVMModel(BaseModel):
 
 class NaiveBayesModel(BaseModel):
 
-    def __init__(self):
+    def train_model(self):
 
         self.model = GaussianNB()
         self._train_model("NaiveBayes")
@@ -122,7 +189,7 @@ class NaiveBayesModel(BaseModel):
 
 class KNNModel(BaseModel):
 
-    def __init__(self, n_neighbors: int = 5):
+    def train_model(self, n_neighbors: int = 5):
 
         self.model = KNeighborsClassifier(n_neighbors=n_neighbors)
         self._train_model("KNN")
@@ -130,7 +197,7 @@ class KNNModel(BaseModel):
 
 class XGBoostModel(BaseModel):
 
-    def __init__(self, n_estimators: int = 100, random_state: int = 42):
+    def train_model(self, n_estimators: int = 100, random_state: int = 42):
 
         try:
             import xgboost as xgb
@@ -151,7 +218,7 @@ class XGBoostModel(BaseModel):
 
 class NeuralNetworkModel(BaseModel):
 
-    def __init__(self, hidden_layer_sizes: tuple = (100, 50), 
+    def train_model(self, hidden_layer_sizes: tuple = (100, 50), 
                  random_state: int = 42, max_iter: int = 500):
 
         self.model = MLPClassifier(
@@ -163,48 +230,3 @@ class NeuralNetworkModel(BaseModel):
         self._train_model("NeuralNetwork")
         
 
-def log_model_results(model_type: str, accuracy: float, results_file: str = "model_results.csv"):
-
-    try:
-        
-        # Check if results file exists
-        if os.path.exists(results_file):
-            df = pd.read_csv(results_file)
-        else:
-            df = pd.DataFrame(columns=['model_type', 'data_schema_version', 'accuracy'])
-        
-        # Remove any existing rows with the same model_type and schema version
-        # Convert data_schema_version to string to ensure type consistency
-        df['data_schema_version'] = df['data_schema_version'].astype(str)
-        mask = (df['model_type'] == model_type) & (df['data_schema_version'] == DATA_SCHEMA_VERSION)
-       
-        df = df[~mask]
-        
-        # Add new row
-        new_row = pd.DataFrame({
-            'model_type': [model_type],
-            'data_schema_version': [DATA_SCHEMA_VERSION],
-            'accuracy': [round(accuracy, 3)]
-        })
-        
-        df = pd.concat([df, new_row], ignore_index=True)
-        
-        # Save to CSV
-        df.to_csv(results_file, index=False)
-        
-    except Exception as e:
-        print(f"Error logging results for {model_type}: {e}")
-        import traceback
-        traceback.print_exc()
-
-
-
-
-
-RandomForestModel()
-LogisticRegressionModel()
-SVMModel()
-NaiveBayesModel()
-KNNModel()
-XGBoostModel()
-NeuralNetworkModel()
