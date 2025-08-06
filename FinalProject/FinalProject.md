@@ -102,7 +102,7 @@ We generated multiple batches of data:
 
 <Max: This whole section needs to be reworked>
 
-
+AFTER:
 =================
 
 #### Distributions
@@ -119,11 +119,21 @@ The distribution of the action variable is well balanced across all 8 possible a
 
 #### Run level variability
 
+![](Resources/RunAnalysis.png)
+
+#### Feature importance analysis
+
+##### Before goal direction
+
+![](Resources/GoalDirectionBefore.png)
+
+##### After goal direction
+
+![](Resources/GoalDirectionAfter.png)
 
 
-
+BEFORE:
 ==================
-
 
 
 Figure 1 shows boxplots of the sensor readings by action; the distribution of distances varies across sensors and actions, with some directions frequently returning small values (closer obstacles).  The correlation matrix in Figure 2 reveals weak correlations among most sensors and between sensors and the distance to the goal, suggesting that each sensor provides distinct information about the environment.
@@ -139,6 +149,9 @@ Boxplots of sensor readings are grouped by action.  Each subplot corresponds to 
 Correlation matrix of the eight sensor features and the distance to the goal.  Most sensor pairs exhibit low correlation (<0.1), implying that each direction provides largely independent information.  The distance to the goal correlates modestly (≈0.25) with some sensors but not strongly enough to resolve ambiguities.
 
 We also examined the frequency of actions.  The distribution is highly imbalanced: approximately 60 % of actions correspond to moves that keep the agent roughly aligned with the direct line to the goal.  Rare actions such as backtracking occur infrequently.  This class imbalance affects learning, as models may focus on the majority actions and neglect rare but important maneuvers.
+
+
+==================
 
 ### 2.4 Shifting-signals problem and information asymmetry
 
