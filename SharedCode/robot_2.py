@@ -46,19 +46,6 @@ def a_star(world, start, goal):
 
     return []
 
-def get_sensor_readings(world, pos):
-    readings = []
-    for dx, dy in DIRECTIONS:
-        dist = 0
-        x, y = pos[0], pos[1]
-        while True:
-            x += dx
-            y += dy
-            dist += 1
-            if not (0 <= x < world.size and 0 <= y < world.size) or world.grid[y][x] == 1:
-                break
-        readings.append(dist)
-    return readings
 
 def get_action(from_pos, to_pos):
     dx = to_pos[0] - from_pos[0]
@@ -93,7 +80,7 @@ def generate_training_data(world, path, run_id, starting_timestamp):
     data = []
     timestamp = starting_timestamp
     for i in range(len(path) - 1):
-        sensors = get_sensor_readings(world, path[i])
+        sensors = world.get_sensor_readings(path[i])
         action = get_action(path[i], path[i + 1])
         if action is not None:
             remaining = np.linalg.norm(np.subtract(path[-1], path[i]))

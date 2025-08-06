@@ -84,7 +84,7 @@ class World:
         readings = []
         x, y = position
         
-        for dx, dy in self.DIRECTIONS:
+        for dy, dx in self.DIRECTIONS:
             distance = 0
             curr_x, curr_y = x, y
             
