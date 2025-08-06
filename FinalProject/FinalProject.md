@@ -8,14 +8,23 @@ August 11, 2025
 
 # Abstract
 
-Autonomous navigation through complex environments is a fundamental challenge in robotics and artificial intelligence.  This project explores whether a robot can learn to navigate in a randomly generated two-dimensional world with obstacles using supervised learning.  A world generator creates 30×30 grids populated with single-tile obstacles and random linear walls; an agent equipped with eight radial sensors receives the distance to the nearest obstacle in each direction together with its Euclidean distance to the goal.  An A* path-planner produces optimal actions, which serve as the supervisory signal for training.  We perform exploratory data analysis to understand the distribution of sensor readings and evaluate multiple classification algorithms—including Random Forest, XGBoost, logistic regression, support vector machines, Naïve Bayes, K-nearest neighbors and a neural network—on the resulting dataset.  We find that all models struggle to exceed 0.37 accuracy due to severe information asymmetry and shifting-signals problems inherent in the data.  Our analysis draws on related work in partially observable Markov decision processes, imitation learning and differentiable planning to contextualize the limitations and recommend future directions.
+Autonomous navigation through complex environments is a fundamental challenge in robotics and artificial intelligence.  This project explores whether a robot can learn to navigate in a randomly generated two-dimensional world with obstacles using supervised learning.  A world generator creates 30×30 grids populated with single-tile obstacles and random linear walls; an agent equipped with eight radial sensors receives the distance to the nearest obstacle in each direction together with its Euclidean distance to the goal.  An A* path-planner produces optimal actions, which serve as the supervisory signal for training.  We perform exploratory data analysis to understand the distribution of sensor readings and evaluate multiple classification algorithms—including Random Forest, XGBoost, logistic regression, support vector machines, Naïve Bayes, K-nearest neighbors and a neural network—on the resulting dataset.  
+
+We find that ________________
+
+BEFORE: all models struggle to exceed 0.37 accuracy due to severe information asymmetry and shifting-signals problems inherent in the data. 
+
+AFTER: a wide variety of machine learning models are capable of generalizing obstacle avoidance and goal seeking behavior given that the right features are present in the training data.
+
+
+Our analysis draws on related work in partially observable Markov decision processes, imitation learning and differentiable planning to contextualize the limitations and recommend future directions.
 
 Keywords: random forest, logistic regression, Naïve Bayes, neural networks, A*, logistic regression
 
 
 # Robots in Random 2D Worlds
 
-Navigation in environments with uncertainty and partial observability is an important problem in artificial intelligence and robotics.  Early research such as ALVINN demonstrated that a neural network could map raw sensory input to steering commands for an autonomous vehicle【650549137831343†L85-L91】.  The formal framework for decision making with incomplete state information is the **partially observable Markov decision process** (POMDP), which models an agent that cannot directly observe the underlying state and must maintain a belief state【141877599114902†L128-L145】.  Solving POMDPs exactly is computationally hard, spurring the development of approximate planning and learning methods.  A* search, a heuristic graph-search algorithm that combines the actual cost of a path with an admissible heuristic estimate, remains the standard for optimal path finding in fully observable domains【26737911614009†L167-L184】.
+Navigation in environments with uncertainty and partial observability is an important problem in artificial intelligence and robotics.  Early research such as ALVINN demonstrated that a neural network could map raw sensory input to steering commands for an autonomous vehicle (Pomerleau, 1998).  The formal framework for decision making with incomplete state information is the **partially observable Markov decision process** (POMDP), which models an agent that cannot directly observe the underlying state and must maintain a belief state (Delgado et al. 2016).  Solving POMDPs exactly is computationally hard, spurring the development of approximate planning and learning methods.  A* search, a heuristic graph-search algorithm that combines the actual cost of a path with an admissible heuristic estimate, remains the standard for optimal path finding in fully observable domains.
 
 The final team project in our applied artificial intelligence course asks us to identify an AI-driven problem, conduct a hands-on project and produce a report and presentation.  We chose to investigate whether a robot can learn to navigate random two-dimensional environments with obstacles using supervised learning.  Using A* as an expert, we generate trajectories and collect sensor readings and actions.  We then train a variety of classification models to predict the next move from sensor input, compare their performance and discuss the inherent limitations.  Our objectives are to:
 
@@ -66,7 +75,7 @@ This iterative tuning of network structure was essential to achieving reliable p
 
 ### 2.2 Data generation using A*
 
-A* search uses a priority queue to explore nodes with the lowest estimated total cost (the cost so far plus a heuristic).  We use the Euclidean distance to the goal as the heuristic.  When constructing the dataset, we run A* on each randomly generated world to compute an optimal path from the start to the goal.  For every step along the path, we record the timestamp, run identifier, current position, the eight sensor readings, the Euclidean distance to the goal, the current path length and the action taken.  Listing 1 summarizes the data schema.
+A* search uses a priority queue to explore nodes with the lowest estimated total cost (the cost so far plus a heuristic).  We use the Euclidean distance to the goal as the heuristic.  When constructing the dataset, we run A* on each randomly generated world to compute an optimal path from the start to the goal.  For every step along the path, we record the timestamp, run identifier, current position, the eight sensor readings, the Euclidean distance to the goal, the goal direction and the action taken.  Listing 1 summarizes the data schema.
 
 | **Column**                 | **Description**                                   |
 | -------------------------- | ------------------------------------------------- |
@@ -76,6 +85,7 @@ A* search uses a priority queue to explore nodes with the lowest estimated total
 | `sensor_0…sensor_7`        | Distances to nearest obstacle in eight directions |
 | `distance_to_goal`         | Euclidean distance to goal                        |
 | `path_length`              | Steps taken so far                                |
+| `goal_direction`                   | The calculated angle between the current position and the goal, in radians            |
 | `action`                   | Optimal move (0–7) as determined by A*            |
 
 
@@ -92,7 +102,31 @@ We generated multiple batches of data:
 
 <Max: This whole section needs to be reworked>
 
-We performed exploratory data analysis (EDA) on the dataset to understand feature distributions and potential issues.  Figure 1 shows boxplots of the sensor readings by action; the distribution of distances varies across sensors and actions, with some directions frequently returning small values (closer obstacles).  The correlation matrix in Figure 2 reveals weak correlations among most sensors and between sensors and the distance to the goal, suggesting that each sensor provides distinct information about the environment.
+
+=================
+
+#### Distributions
+
+We performed exploratory data analysis (EDA) on the dataset to understand feature distributions and potential issues.  
+
+Figure 1 shows the ditribution of each variable in the dataset.
+
+![](Resources/VariableDistributions.png)
+
+We observe that all sensor readings, and distance to goal exhibit a gamma (?) distribution, reflecting the right skew in the distribution caused by larger frequency of smaller values.
+
+The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The relative uniformity of the distribution across class labels stands to give a good training signal for each class. 
+
+#### Run level variability
+
+
+
+
+==================
+
+
+
+Figure 1 shows boxplots of the sensor readings by action; the distribution of distances varies across sensors and actions, with some directions frequently returning small values (closer obstacles).  The correlation matrix in Figure 2 reveals weak correlations among most sensors and between sensors and the distance to the goal, suggesting that each sensor provides distinct information about the environment.
 
 ![Sensor readings by action, showing variation across actions and sensors]({{file-Dp6SFMpv6jUUT58QCRAQxR}})
 
