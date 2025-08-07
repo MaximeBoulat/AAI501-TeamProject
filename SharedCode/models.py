@@ -16,7 +16,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 
 from world import World
-
+from config import *
 import joblib
 
 
@@ -56,7 +56,7 @@ class BaseModel(ABC):
             print(f"Error loading model {model_type}: {e}")
         
 
-    def _train_model(self, model_type: str, csv_file: str = "training_data.csv"):
+    def _train_model(self, model_type: str, csv_file: str = TRAINING_DATA_FILE):
    
         try:
             # Load training data
