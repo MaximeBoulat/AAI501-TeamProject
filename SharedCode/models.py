@@ -63,12 +63,8 @@ class BaseModel(ABC):
             df = pd.read_csv(csv_file)
             print(f"Loaded {len(df)} training samples from {csv_file}")
 
-           
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal', 'goal_direction']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
+            X = df[X_COLS].values
+            y = df[Y_HAT_COL[0]].values
 
             # Split into train/test sets
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
