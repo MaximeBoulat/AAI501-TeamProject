@@ -165,7 +165,8 @@ It is interesting to note that even though the trained models were able to emula
 
 ### Selecting Neural Network Architecture
 
-To observe how neural network architecture influences performance on our dataset, we experimented with several multi-layer perceptron (MLP) setups by varying both the number of layers (2 vs. 3) and the number of neurons per layer (16 to 256). We observe that 2-layer MLPs perform better than deeper 3-layer ones, with the highest performance (0.846 accuracy) achieved by the [64, 32] setup. Wider architectures like [128, 64] and [256, 128] performed worse, possibly due to overfitting or less generalization capacity for the dataset size.
+To observe how neural network architecture influences performance on our dataset, we experimented with several multi-layer perceptron (MLP) setups by varying both the number of layers (2 vs. 3) and the number of neurons per layer (16 to 256). We chose the more difficult dataset of dist+goal_dir_3walls_10k
+to see if we could extract any further performance. We observe that 2-layer MLPs perform better than deeper 3-layer ones, with the highest performance (0.846 accuracy) achieved by the [64, 32] setup. Wider architectures like [128, 64] and [256, 128] performed worse, possibly due to overfitting or less generalization capacity for the dataset size.
 
 | Architecture | Layer Sizes      | Accuracy  |
 | ------------ | ---------------- | --------- |
@@ -207,15 +208,15 @@ Overall, these findings indicate that shallower networks with fewer layers and m
 
 - **Explore alternative models**
 
-**Convolutional Neural Networks (CNNs)** – If we restructure the sensor data into a spatial grid or local map, CNNs could better exploit local patterns and symmetry in navigation tasks.
+**Convolutional Neural Networks (CNNs)** – If we reshape the sensor data into a local map or spatial grid, CNNs can potentially better exploit local patterns and symmetry in navigation tasks.
 
-**Recurrent Neural Networks (RNNs) or LSTMs** – These would be useful if the agent's decision depends on temporal history (e.g., previous states or actions), which is common in partially observable environments.
+**Recurrent Neural Networks (RNNs) or LSTMs** – These would be suitable if the agent's decision is based on temporal history (e.g., previous states or actions), which is common for partially observable environments.
 
-**Graph Neural Networks (GNNs)** – If the environment is represented as a graph (e.g., a grid map), GNNs can effectively learn over topological structures and support reasoning about obstacles and connectivity.
+**Graph Neural Networks (GNNs)** – If the environment is a graph (e.g., a grid map), GNNs can learn effectively over topological graphs and allow for reasoning about obstacles and connectivity.
 
-**Reinforcement Learning Models (e.g., DQN, PPO)** – These could directly learn from reward signals in a simulation loop rather than imitating A\* actions, which might produce more adaptive policies.
+**Reinforcement Learning Models (e.g., DQN, PPO)** – They might learn directly from reward signals within a simulation loop rather than imitating A\\\* actions, which could lead to more adaptive policies.
 
-For our current dataset and imitation-learning setup, tree-based models like XGBoost and neural networks like MLP performed well, but if the system is extended to incorporate richer spatial or temporal context, these advanced architectures could yield further improvements.
+For our current dataset and imitation-learning setup, tree-based models like XGBoost and neural network models like MLP performed well, but if the system is extended to more complicated spatial or temporal context, these advanced architectures might yield further improvements.
 
 ## 6 Conclusion
 
