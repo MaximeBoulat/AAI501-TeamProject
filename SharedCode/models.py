@@ -30,7 +30,7 @@ def log_model_results(model_type: str, accuracy: float, results_file: str = "mod
         if os.path.exists(results_file):
             df = pd.read_csv(results_file)
         else:
-            df = pd.DataFrame(columns=['model_type', 'experiment_name', 'data_schema_version', 'accuracy'])
+            df = pd.DataFrame(columns=['model_type', 'experiment_name', 'accuracy'])
         
         # Remove any existing rows with the same model_type and experiment_name
         # Convert columns to string to ensure type consistency
