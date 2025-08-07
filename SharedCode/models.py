@@ -289,7 +289,7 @@ class XGBoostModel(BaseModel):
 
 class NeuralNetworkModel(BaseModel):
 
-    def train_model(self, hidden_layer_sizes: tuple = (100, 50), 
+    def train_model(self, hidden_layer_sizes: tuple = NN_HIDDEN_LAYERS, 
                  random_state: int = 42, max_iter: int = 500):
 
         self.model = MLPClassifier(
