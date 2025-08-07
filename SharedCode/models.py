@@ -41,8 +41,8 @@ class BaseModel(ABC):
 
     def from_file(self, model_type: str):
         model_dir = f"models/{model_type}"
-        model_filename = f"{model_dir}/model.pkl"
-        scaler_filename = f"{model_dir}/scaler.pkl"
+        model_filename = f"{model_dir}/model_{EXPERIMENT_NAME}.pkl"
+        scaler_filename = f"{model_dir}/scaler_{EXPERIMENT_NAME}.pkl"
         try:
             self.model = joblib.load(model_filename)
             print(f"Loaded model from {model_filename}")
@@ -86,8 +86,8 @@ class BaseModel(ABC):
             # save the model and scaler to the file system
             model_dir = f"models/{model_type}"
             os.makedirs(model_dir, exist_ok=True)
-            model_filename = f"{model_dir}/model.pkl"
-            scaler_filename = f"{model_dir}/scaler.pkl"
+            model_filename = f"{model_dir}/model_{EXPERIMENT_NAME}.pkl"
+            scaler_filename = f"{model_dir}/scaler_{EXPERIMENT_NAME}.pkl"
             try:
                 joblib.dump(self.model, model_filename)
                 print(f"Saved trained model to {model_filename}")
