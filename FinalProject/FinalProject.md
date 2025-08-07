@@ -56,7 +56,7 @@ With these enhancements, the final raw state representation consisted of sensor_
 
 ### 3.2 Data generation using A\*
 
-A*search uses a priority queue to explore nodes with the lowest estimated total cost (the cost so far plus a heuristic). We use the Euclidean distance to the goal as the heuristic. When constructing the dataset, we run A* on each randomly generated world to compute an optimal path from the start to the goal. For every step along the path, we record the timestamp, run identifier, current position, the eight sensor readings, the Euclidean distance to the goal, the goal direction and the action taken. Listing 1 summarizes the data schema.
+A\* search uses a priority queue to explore nodes with the lowest estimated total cost (the cost so far plus a heuristic). We use the Euclidean distance to the goal as the heuristic. When constructing the dataset, we run A\* on each randomly generated world to compute an optimal path from the start to the goal. For every step along the path, we record the timestamp, run identifier, current position, the eight sensor readings, the Euclidean distance to the goal, the goal direction and the action taken. Listing 1 summarizes the data schema.
 
 | **Column**                 | **Description**                                                            |
 | -------------------------- | -------------------------------------------------------------------------- |
@@ -64,17 +64,17 @@ A*search uses a priority queue to explore nodes with the lowest estimated total 
 | `run_id`                   | Simulation run identifier                                                  |
 | `position_x`, `position_y` | Agent’s coordinates (not used as features)                                 |
 | `sensor_0…sensor_7`        | Distances to nearest obstacle in eight directions                          |
-| `distance_to_goal`         | Euclidean distance to goal                                                 |
+| `distance_to_goal`         | Euclidean distance[dksd: manhatten] to goal                                |
 | `path_length`              | Steps taken so far                                                         |
 | `goal_direction`           | The calculated angle between the current position and the goal, in radians |
 | `action`                   | Optimal move (0–7) as determined by A\*                                    |
 
 We generated multiple batches of data:
 
-- action_sensor+dist: Sample size 3000 runs (35,452 labelled instances), no goal direction
-- action_sensor+dist_dir: Sample size 3000 runs (35,452 labelled instances), goal direction as a feature
-- action_sensor+dist_dir_10k: Sample size 10000 runs (118211 labelled instances), goal direction as a feature
-- action_sensor+dist_dir_10k_3walls: Sample size 10000 runs (118211 labelled instances), goal direction as a feature with 3 walls
+- action_sensor+dist: Sample size 3000 runs (35,452 labelled instances), no `goal_drection`
+- action_sensor+dist_dir: Sample size 3000 runs (35,452 labelled instances), `goal direction` as a feature
+- action_sensor+dist_dir_10k: Sample size 10000 runs (118211 labelled instances), `goal direction` as a feature
+- action_sensor+dist_dir_10k_3walls: Sample size 10000 runs (118211 labelled instances), `goal direction` as a feature with 3 walls
 
 ### 3.3 Exploratory data analysis
 
@@ -88,7 +88,7 @@ Figure 1 shows the distribution of each variable in the dataset.
 
 We observe that all sensor readings, and distance to goal exhibit a gamma (?) distribution, reflecting the right skew in the distribution caused by larger frequency of smaller values.
 
-The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The relative uniformity of the distribution across class labels stands to give a good training signal for each class.
+[dksd: explicitly state that the balanced action distribution reduces class imbalance issues during training.] The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The relative uniformity of the distribution across class labels stands to give a good training signal for each class.[dksd: consistent with a right-skewed distribution.]
 
 #### 3.3.2 Run level variability
 
@@ -102,7 +102,7 @@ An important observation from EDA is that identical sensor readings can correspo
 
 To quantify this phenomenon, we grouped training samples by sensor value patterns, and counted the percentage of unique patterns which had conflicting action labels with and without goal direction. We found that 31.7% of the patterns had conflicts without goal direction whereas only 8.8% had conflicts with goal direction.
 
-To help visualize the problem further, we performed a full fledged feature uniqueness analysis:
+To help visualize the problem further, we performed a full-fledged feature uniqueness analysis:
 
 without goal direction:
 
@@ -136,8 +136,8 @@ We compared a selection of classification models in scikit-learn and the XGBoost
 
 Selecting the right structure for the various AI selected models, for example, the neural network architecture is a critical part of our methodology. The structure of the network—including the number of layers, the number of units per layer, activation functions, and regularization strategies—can significantly affect the model's ability to learn from the input features and generalize to new environments.
 
-We approached architecture selection empirically, starting with simple fully connected (feedforward) networks and adjusting based on performance. Shallower networks tended to underfit the problem, especially once we introduced more nuanced features like distance_to_goal and normalized direction vectors. Deeper architectures provided the capacity to model more complex relationships between inputs and the optimal actions, but came with increased risk of overfitting. We mitigated this using techniques such as dropout, early stopping, and batch normalization.
-The choice of output representation (categorical vs. continuous ŷ) also influenced architecture decisions. For classification targets, a softmax output layer paired with cross-entropy loss was appropriate. For continuous direction vectors, we used a linear output layer and optimized with mean squared error (MSE). In both cases, the architecture had to align with the nature of the prediction target to ensure stable and effective learning.
+We approached architecture selection empirically, starting with simple fully connected (feed-forward) networks and adjusting based on performance. Shallower networks tended to underfit the problem, especially once we introduced more nuanced features like distance_to_goal and normalized direction vectors. Deeper architectures provided the capacity to model more complex relationships between inputs and the optimal actions, but came with increased risk of over-fitting. We mitigated this using techniques such as dropout, early stopping, and batch normalization.
+The choice of output representation (categorical vs. continuous ŷ) also influenced architecture decisions. For classification targets, a `softmax` output layer paired with cross-entropy loss was appropriate. For continuous direction vectors, we used a linear output layer and optimized with mean squared error (MSE). In both cases, the architecture had to align with the nature of the prediction target to ensure stable and effective learning.
 
 This iterative tuning of network structure was essential to achieving reliable performance and forms a core part of our methodology.
 
@@ -155,7 +155,7 @@ This iterative tuning of network structure was essential to achieving reliable p
 
 The table above shows each model's accuracy on the dataset versions for the held-out test set.
 The addition of goal direction to the distance features gives significant performance boosts to all the models.
-Comparing, for example, the goal_dist_3k dataset with the goal_dist+goal_dir_3k dataset, Random Forest accuracy goes from 0.379 to 0.891, while Naïve Bayes goes from 0.233 to 0.787. Among models compared, Random Forest and XGBoost are the most consistently top-performing models across dataset configurations, with a high performance in larger datasets in particular, such as both achieving 0.889 accuracy on dist+goal_dir_10k. The Neural Network (MLP) also performs strongly, with 0.881 and 0.838 on the 10k datasets. Support Vector Machine is also assisted by the extra directional features but tends to fall behind ensemble methods, with a best accuracy of 0.859. Logistic Regression and K-Nearest Neighbors lag consistently behind, especially as the datasets become more complex. Doubling the size of the dataset from 3k to 10k samples gives moderate accuracy gains to most models—for instance, the Neural Network goes from 0.867 to 0.881, and the SVM from 0.844 to 0.859. But introducing walls into the worlds (dist+goal_dir_3walls_10k) reduces accuracy for a majority of models by some extent, due to greater complexity in navigating around walls; e.g., Random Forest accuracy drops from 0.889 to 0.848, and that of XGBoost from 0.889 to 0.849.
+Comparing, for example, the goal_dist_3k dataset with the `goal_dist+goal_dir_3k` dataset, Random Forest accuracy goes from 0.379 to 0.891, while Naïve Bayes goes from 0.233 to 0.787. Among models compared, Random Forest and XGBoost are the most consistently top-performing models across dataset configurations, with a high performance in larger datasets in particular, such as both achieving 0.889 accuracy on `dist+goal_dir_10k`. The Neural Network (MLP) also performs strongly, with 0.881 and 0.838 on the 10k datasets. Support Vector Machine is also assisted by the extra directional features but tends to fall behind ensemble methods, with a best accuracy of 0.859. Logistic Regression and K-Nearest Neighbors lag consistently behind, especially as the datasets become more complex. Doubling the size of the dataset from 3k to 10k samples gives moderate accuracy gains to most models—for instance, the Neural Network goes from 0.867 to 0.881, and the SVM from 0.844 to 0.859. But introducing walls into the worlds (`dist+goal_dir_3walls_10k`) reduces accuracy for a majority of models by some extent, due to greater complexity in navigating around walls; e.g., Random Forest accuracy drops from 0.889 to 0.848, and that of XGBoost from 0.889 to 0.849.
 
 We were able to visualize the decision-making abilities of the various models by loading the model's prediction function into the simulator and presenting it with new randomly generated worlds.
 
@@ -169,8 +169,8 @@ It is interesting to note that even though the trained models were able to emula
 
 ### Selecting Neural Network Architecture
 
-To observe how neural network architecture influences performance on our dataset, we experimented with several multi-layer perceptron (MLP) setups by varying both the number of layers (2 vs. 3) and the number of neurons per layer (16 to 256). We chose the more difficult dataset of dist+goal_dir_3walls_10k
-to see if we could extract any further performance. We observe that 2-layer MLPs perform better than deeper 3-layer ones, with the highest performance (0.846 accuracy) achieved by the [64, 32] setup. Wider architectures like [128, 64] and [256, 128] performed worse, possibly due to overfitting or less generalization capacity for the dataset size.
+To observe how neural network architecture influences performance on our dataset, we experimented with several multi-layer perceptron (MLP) setups by varying both the number of layers (2 vs. 3) and the number of neurons per layer (16 to 256). We chose the more difficult dataset of `dist+goal_dir_3walls_10k`
+to see if we could extract any further performance. We observe that 2-layer MLPs perform better than deeper 3-layer ones, with the highest performance (0.846 accuracy) achieved by the [64, 32] setup. Wider architectures like [128, 64] and [256, 128] performed worse, possibly due to over-fitting or less generalization capacity for the dataset size.
 
 | Architecture | Layer Sizes      | Accuracy  |
 | ------------ | ---------------- | --------- |
@@ -228,24 +228,24 @@ This project investigated whether an agent could learn to navigate randomly gene
 
 # References
 
-- Barreto, A., Dabney, W., Munos, R., Hunt, J. J., Schaul, T., van Hasselt, H., & Silver, D. (2018). *Successor features for transfer in reinforcement learning*. arXiv. <https://arxiv.org/abs/1606.05312>
+- Barreto, A., Dabney, W., Munos, R., Hunt, J. J., Schaul, T., van Hasselt, H., & Silver, D. (2018). _Successor features for transfer in reinforcement learning_. arXiv. <https://arxiv.org/abs/1606.05312>
 
-- Codevilla, F., Santana, E., López, A. M., & Gaidon, A. (2019). *Exploring the limitations of behavior cloning for autonomous driving*. arXiv. <https://arxiv.org/abs/1904.08980>
+- Codevilla, F., Santana, E., López, A. M., & Gaidon, A. (2019). _Exploring the limitations of behavior cloning for autonomous driving_. arXiv. <https://arxiv.org/abs/1904.08980>
 
-- Delgado, K. V., de Barros, L. N., Dias, D. B., & Sanner, S. (2016). *Real-time dynamic programming for Markov decision processes with imprecise probabilities*. *Artificial Intelligence, 230*, 192-223. <https://doi.org/10.1016/j.artint.2015.09.005>
+- Delgado, K. V., de Barros, L. N., Dias, D. B., & Sanner, S. (2016). _Real-time dynamic programming for Markov decision processes with imprecise probabilities_. _Artificial Intelligence, 230_, 192-223. <https://doi.org/10.1016/j.artint.2015.09.005>
 
-- Hausknecht, M. J., & Stone, P. (2015). *Deep recurrent Q-learning for partially observable MDPs*. arXiv. <http://arxiv.org/abs/1507.06527>
+- Hausknecht, M. J., & Stone, P. (2015). _Deep recurrent Q-learning for partially observable MDPs_. arXiv. <http://arxiv.org/abs/1507.06527>
 
-- Mathieu, M., Ozair, S., Srinivasan, S., Gulcehre, C., Zhang, S., Jiang, R., Le Paine, T., Powell, R., Żołna, K., Schrittwieser, J., Choi, D., Georgiev, P., Toyama, D., Huang, A., Ring, R., Babuschkin, I., Ewalds, T., Bordbar, M., Henderson, S., ... Vinyals, O. (2023). *AlphaStar Unplugged: Large-scale offline reinforcement learning*. arXiv. <https://arxiv.org/abs/2308.03526>
+- Mathieu, M., Ozair, S., Srinivasan, S., Gulcehre, C., Zhang, S., Jiang, R., Le Paine, T., Powell, R., Żołna, K., Schrittwieser, J., Choi, D., Georgiev, P., Toyama, D., Huang, A., Ring, R., Babuschkin, I., Ewalds, T., Bordbar, M., Henderson, S., ... Vinyals, O. (2023). _AlphaStar Unplugged: Large-scale offline reinforcement learning_. arXiv. <https://arxiv.org/abs/2308.03526>
 
-- Parisotto, E., & Salakhutdinov, R. (2017). *Neural Map: Structured memory for deep reinforcement learning*. arXiv. <https://arxiv.org/abs/1702.08360>
+- Parisotto, E., & Salakhutdinov, R. (2017). _Neural Map: Structured memory for deep reinforcement learning_. arXiv. <https://arxiv.org/abs/1702.08360>
 
-- Petrović, L. (2018). *Motion planning in high-dimensional spaces*. arXiv. <https://arxiv.org/abs/1806.07457>
+- Petrović, L. (2018). _Motion planning in high-dimensional spaces_. arXiv. <https://arxiv.org/abs/1806.07457>
 
-- Pomerleau, D. A. (1988). *ALVINN: An autonomous land vehicle in a neural network*. In D. Touretzky (Ed.), *Advances in Neural Information Processing Systems* (Vol. 1). Morgan Kaufmann. <https://proceedings.neurips.cc/paper_files/paper/1988/file/812b4ba287f5ee0bc9d43bbf5bbe87fb-Paper.pdf>
+- Pomerleau, D. A. (1988). _ALVINN: An autonomous land vehicle in a neural network_. In D. Touretzky (Ed.), _Advances in Neural Information Processing Systems_ (Vol. 1). Morgan Kaufmann. <https://proceedings.neurips.cc/paper_files/paper/1988/file/812b4ba287f5ee0bc9d43bbf5bbe87fb-Paper.pdf>
 
-- Ross, S., Gordon, G. J., & Bagnell, J. A. (2011). *A reduction of imitation learning and structured prediction to no-regret online learning*. arXiv. <https://arxiv.org/abs/1011.0686>
+- Ross, S., Gordon, G. J., & Bagnell, J. A. (2011). _A reduction of imitation learning and structured prediction to no-regret online learning_. arXiv. <https://arxiv.org/abs/1011.0686>
 
-- Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2017). *Value iteration networks*. arXiv. <https://arxiv.org/abs/1602.02867>
+- Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2017). _Value iteration networks_. arXiv. <https://arxiv.org/abs/1602.02867>
 
-- Xia, F., Li, C., Chen, K., Shen, W. B., Martín-Martín, R., Hirose, N., Zamir, A. R., Fei-Fei, L., & Savarese, S. (2019, June 16). *Gibson Env V2: Embodied simulation environments for interactive navigation* (Tech. Rep.). Stanford University. <http://svl.stanford.edu/gibson2>
+- Xia, F., Li, C., Chen, K., Shen, W. B., Martín-Martín, R., Hirose, N., Zamir, A. R., Fei-Fei, L., & Savarese, S. (2019, June 16). _Gibson Env V2: Embodied simulation environments for interactive navigation_ (Tech. Rep.). Stanford University. <http://svl.stanford.edu/gibson2>
