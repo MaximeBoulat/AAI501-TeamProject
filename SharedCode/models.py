@@ -20,18 +20,45 @@ from config import *
 import joblib
 
 
-# Data schema version for tracking
-
-# 1.0: sample size 100
-# 1.1: sample size 3000
-# 2.0: sample size 3000, goal direction added
-# 2.1: sample size 10000
-# 2.2: match Dylan config
-# 2.3: use Dylan's dataset
-
-DATA_SCHEMA_VERSION = "2.0"
 
 USE_SCALER = True
+
+def log_model_results(model_type: str, accuracy: float, results_file: str = "model_results.csv"):
+    try:
+        
+        # Check if results file exists
+        if os.path.exists(results_file):
+            df = pd.read_csv(results_file)
+        else:
+            df = pd.DataFrame(columns=['model_type', 'experiment_name', 'accuracy'])
+        
+        # Remove any existing rows with the same model_type and experiment_name
+        # Convert columns to string to ensure type consistency
+        if not df.empty:
+            df['experiment_name'] = df['experiment_name'].astype(str)
+            mask = (df['model_type'] == model_type) & (df['experiment_name'] == EXPERIMENT_NAME)
+            df = df[~mask]
+        
+        # Add new row with enhanced tracking
+        new_row = pd.DataFrame({
+            'model_type': [model_type],
+            'experiment_name': [EXPERIMENT_NAME],
+            'accuracy': [round(accuracy, 3)]
+        })
+        
+        df = pd.concat([df, new_row], ignore_index=True)
+        
+        # Sort by model_type and experiment_name for better organization
+        df = df.sort_values(['model_type', 'experiment_name']).reset_index(drop=True)
+        
+        # Save to CSV
+        df.to_csv(results_file, index=False)
+        print(f"Logged results for {model_type} ({EXPERIMENT_NAME}): {accuracy:.3f} accuracy")
+        
+    except Exception as e:
+        print(f"Error logging results for {model_type}: {e}")
+        import traceback
+        traceback.print_exc()
 
 class BaseModel(ABC):
     
@@ -119,6 +146,9 @@ class BaseModel(ABC):
             y_pred = self.model.predict(X_test)
             accuracy = accuracy_score(y_test, y_pred)
             print(f"{model_type} training completed. Test accuracy: {accuracy:.3f}")
+
+            # Log results to CSV with enhanced naming convention
+            log_model_results(model_type, accuracy)
 
             # save the model and scaler to the file system
             model_dir = f"models/{model_type}"
