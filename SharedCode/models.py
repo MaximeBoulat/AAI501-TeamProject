@@ -36,8 +36,14 @@ USE_SCALER = True
 class BaseModel(ABC):
     
     def __init__(self):
+        
         self.model = None
         self.scaler = None
+        # Loop detection attributes - using hash table for O(1) lookups
+        self.position_counts = {}  # Hash table to track position visit counts
+        self.position_queue = []   # Queue to maintain order for cleanup
+        self.max_history_length = 5  # Track last 5 positions (reduced for efficiency)
+        self.loop_detection_threshold = 2  # Consider loop if position visited 2+ times recently
 
     def from_file(self, model_type: str):
         model_dir = f"models/{model_type}"
@@ -55,6 +61,37 @@ class BaseModel(ABC):
         except Exception as e:
             print(f"Error loading model {model_type}: {e}")
         
+    def reset(self):
+        
+        # Clear position tracking when resetting
+        self.position_counts = {}
+        self.position_queue = []
+    
+    def _detect_loop(self, current_position: Tuple[int, int]) -> bool:
+
+        # O(1) lookup in hash table - much faster than iterating through list
+        position_count = self.position_counts.get(current_position, 0)
+        
+        # If we've been to this position multiple times recently, it's likely a loop
+        return position_count >= self.loop_detection_threshold
+    
+    def _update_position_history(self, position: Tuple[int, int]):
+        """Update the position tracking using hash table and queue for efficient cleanup."""
+        # Add position to queue for order tracking
+        self.position_queue.append(position)
+        
+        # Increment count in hash table - O(1) operation
+        self.position_counts[position] = self.position_counts.get(position, 0) + 1
+        
+        # Clean up old positions if we exceed max history length
+        if len(self.position_queue) > self.max_history_length:
+            # Remove oldest position from queue and decrement its count
+            old_position = self.position_queue.pop(0)
+            self.position_counts[old_position] -= 1
+            
+            # Remove from hash table if count reaches 0 to save memory
+            if self.position_counts[old_position] == 0:
+                del self.position_counts[old_position]
 
     def _train_model(self, model_type: str, csv_file: str = TRAINING_DATA_FILE):
    
@@ -109,6 +146,14 @@ class BaseModel(ABC):
             self.model = None
     
     def get_next_action(self, current_position: Tuple[int, int], world: World) -> Optional[int]:
+        
+        # Check for loop before making any action decision
+        if self._detect_loop(current_position):
+            print(f"Loop detected at position {current_position}. Returning invalid action.")
+            return None
+        
+        # Update position history for loop detection
+        self._update_position_history(current_position)
         
         if self.model is None or (USE_SCALER and self.scaler is None):
             return None
