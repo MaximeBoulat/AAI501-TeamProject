@@ -77,4 +77,4 @@ model.from_file("NeuralNetwork")
 
 renderer = PygameRenderer(cell_size=30, show_path_history=True, window_title="Robot Navigation")
 
-run_simulation(100, model, renderer, True)
+run_simulation(10, model, renderer, True)

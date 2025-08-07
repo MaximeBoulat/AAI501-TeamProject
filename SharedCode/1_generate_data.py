@@ -148,7 +148,7 @@ for run_id in range(NUM_RUNS):
     all_training_data.extend(run_data)
 
 # === Save All Runs to CSV ===
-with open("training_data.csv", "w", newline="") as f:
+with open(TRAINING_DATA_FILE, "w", newline="") as f:
     writer = csv.writer(f)
     writer.writerow([
         "timestamp", "run_id",

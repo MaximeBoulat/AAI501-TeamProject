@@ -16,7 +16,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.preprocessing import StandardScaler
 
 from world import World
-
+from config import *
 import joblib
 
 
@@ -41,8 +41,8 @@ class BaseModel(ABC):
 
     def from_file(self, model_type: str):
         model_dir = f"models/{model_type}"
-        model_filename = f"{model_dir}/model.pkl"
-        scaler_filename = f"{model_dir}/scaler.pkl"
+        model_filename = f"{model_dir}/model_{EXPERIMENT_NAME}.pkl"
+        scaler_filename = f"{model_dir}/scaler_{EXPERIMENT_NAME}.pkl"
         try:
             self.model = joblib.load(model_filename)
             print(f"Loaded model from {model_filename}")
@@ -56,19 +56,15 @@ class BaseModel(ABC):
             print(f"Error loading model {model_type}: {e}")
         
 
-    def _train_model(self, model_type: str, csv_file: str = "training_data.csv"):
+    def _train_model(self, model_type: str, csv_file: str = TRAINING_DATA_FILE):
    
         try:
             # Load training data
             df = pd.read_csv(csv_file)
             print(f"Loaded {len(df)} training samples from {csv_file}")
 
-           
-            # Prepare features: 8 sensor readings + distance_to_goal
-            feature_columns = [f'sensor_{i}' for i in range(8)] + ['distance_to_goal', 'goal_direction']
-            X = df[feature_columns].values
-            y = df['action'].values
-            
+            X = df[X_COLS].values
+            y = df[Y_HAT_COL[0]].values
 
             # Split into train/test sets
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -90,8 +86,8 @@ class BaseModel(ABC):
             # save the model and scaler to the file system
             model_dir = f"models/{model_type}"
             os.makedirs(model_dir, exist_ok=True)
-            model_filename = f"{model_dir}/model.pkl"
-            scaler_filename = f"{model_dir}/scaler.pkl"
+            model_filename = f"{model_dir}/model_{EXPERIMENT_NAME}.pkl"
+            scaler_filename = f"{model_dir}/scaler_{EXPERIMENT_NAME}.pkl"
             try:
                 joblib.dump(self.model, model_filename)
                 print(f"Saved trained model to {model_filename}")
