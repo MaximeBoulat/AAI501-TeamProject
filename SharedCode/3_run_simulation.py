@@ -36,10 +36,6 @@ def run_simulation(num_runs: int, model: BaseModel, renderer: Renderer, slow: bo
                 if agent.is_at_goal():
                     break
 
-                # Check if already at goal before trying to move
-                if agent.is_at_goal():
-                    break
-
                 # Update agent (get action from logic and move)
                 update_result = agent.update()
                 
@@ -60,10 +56,6 @@ def run_simulation(num_runs: int, model: BaseModel, renderer: Renderer, slow: bo
                 if slow:
                     time.sleep(0.1)   
             
-
-                # Final render and status
-
-                renderer.render_world(world, agent)
             
             
         except KeyboardInterrupt:
