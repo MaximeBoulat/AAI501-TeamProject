@@ -194,58 +194,26 @@ Overall, these findings indicate that shallower networks with fewer layers and m
 
 ## 6. Discussion
 
-=======
-// Max and Dylan to rewrite this
-
-Dylan:
 
 The results demonstrate that introducing goal direction as a feature yields substantial performance gains across all models, particularly for otherwise uncertain sensor input situations. Ensemble methods, specifically Random Forest and XGBoost, posted the highest and most consistent accuracies, with both achieving 0.889 on the `dist+goal_dir_10k` dataset, indicating their robustness to moderately elevated environmental complexity. The Neural Network also performed well, achieving competitive performance with ensembles, and SVMs improved with the extra directional context but remained slightly less competitive. These results highlight the fact that providing richer spatial information greatly reduces label conflicts arising due to information asymmetry. However, the decrease in performance in the `dist+goal_dir_3walls_10k` condition reveals deficiency in partial observability and more complex obstacle situations, where local distance sensors, especially noisy sensors, cannot fully sense the global navigational space. This means that subsequent research will need to explore more sophisticated representations, such as the application of learned spatial embeddings, memory-based networks, or noise-robust sensor fusion, and, in parallel, the addition of additional sensors to expand the observability field and engineering more features to encode relevant spatial and temporal information. These features could potentially allow models to generalize more abstractly about unseen barriers, reduce the impact of noisy measurements, and stabilize decisions in adverse conditions.
 
 ### 7 Future Work
 
-======
-Max:
-
-Given the constraints we set out, I think we have maximize the capabilities of AI models to solve the problem, and that the next steps would involved:
-
-- making the world more complex
-- adopting the kind of techniques mentioned in the literature review (the more advanced techniques like Alpha Star)
-
-I would want to investigate the obstacle avoidance problem (the limitations of what we have achieved is that it doesn't know how to plan)
-
-======
-Dylan
 
 Within the limits we established, our current approach has pushed the acuity of supervised AI models close to the limits for this task. Future efforts must include increasing the complexity of the environment and adopting more advanced learning paradigms that can handle planning, partial observability, and varied or noisy sensor inputs. On the environment side, this includes making the worlds progressively more complex—incorporating additional obstacles, varied layouts, and more challenging navigation constraints—to better mirror real-world environments. Incorporating additional sensors and features to provide richer spatial and temporal information, such as relative goal angles, local occupancy patterns, or derived spatial embeddings, could also reduce label ambiguity and improve performance.
 On the modeling front, future work needs to investigate architectures better suited to spatial and temporal reasoning. **Convolutional Neural Networks (CNNs)** can exploit local spatial patterns if sensor data is represented as a grid, while **Recurrent Neural Networks (RNNs) or LSTMs** can integrate observations over time to maintain an implicit belief state, enabling more effective decision-making in partially observable Markov decision processes (POMDPs). **Graph Neural Networks (GNNs)** are a way of reasoning about topological structures, i.e., grids with obstacle connectivity. Beyond imitation learning, **reinforcement learning approaches**—i.e., **Q-learning**, **Deep Q-Networks (DQN)**, **Proximal Policy Optimization (PPO)**, and even hierarchical planning systems like those used in **AlphaStar**—would allow agents to learn adaptive policies from reward signals directly, enabling true obstacle avoidance and goal-directed planning rather than simply imitating A\\\* outputs.
 
 Collectively, these above approaches—feature engineering, sensors that are more informative, temporal modeling, and reinforcement learning—offer a path towards agents that plan, adapt, and navigate effectively in increasingly complex and noisy environments.
 
-=======
-Original:
-
-- **Reduce sensor range** to two or three tiles to encourage repeated patterns and limit the feature space. This would make nearest-neighbor methods more meaningful and reduce contradictions.
-- **Augment features** with the relative angle to the goal rather than just the Euclidean distance; this provides directional context without revealing the entire map.
-- **Incorporate memory** using recurrent networks (e.g., LSTM) to aggregate information across multiple steps. Such models can build an implicit belief about the environment, analogous to DRQN for POMDPs.
-- **Use imitation-learning algorithms such as DAgger**, which query the expert for additional labels when the learner deviates. This ensures that data covers states likely under the learned policy and reduces distribution shift.
-
-======
 
 ## 8 Conclusion
 
-======
-Rewrite this:
-
-This project investigated whether an agent could learn to navigate randomly generated two-dimensional worlds with obstacles using supervised learning. By generating a dataset of optimal actions via A\* and training multiple classifiers, we found that the problem is inherently ill-posed. Identical sensor inputs often correspond to different optimal moves because of the agent’s limited field of view and the influence of the goal’s location. Consequently, even high-capacity models such as Random Forest and XGBoost achieve only ~0.37 accuracy, and other methods perform worse. The experience underscores the limitations of behavior cloning in partially observable environments and highlights the need for algorithms that incorporate planning, memory and exploration. Future work should consider imitation-learning algorithms that handle distribution shift, recurrent architectures, differentiable planners and reinforcement learning to overcome the information asymmetry and achieve robust navigation.
-
-=======
-Dylan:
 
 This work investigated the impact that the feature design and model selection can have on learning navigation policies from local sensor measurements, in particular how information asymmetry and partial observability can cause conflicting action labels for otherwise identical sensors. Through running extensive experiments, we demonstrated that including distance features with goal direction significantly enhances performance across all tested models, where ensemble methods such as Random Forest and XGBoost achieved the most robust and highest accuracies. In spite of that, adding more challenging obstacle configurations revealed weaknesses in all models, most significantly under situations where local sensing cannot perceive the complete navigational context.
 
 These findings point to two key findings: one, that carefully designed features can dramatically minimize label ambiguity; and two, that conventional supervised approaches remain inherently bound in environments requiring long-horizon planning or reasoning over hidden state. Breaking such constraints will require transcending fixed feature representations to more observant sensing, temporal abstraction, and adaptive decision-making methods such as reinforcement learning and recurrent models. By combining these techniques with the proposed feature engineering and denser sensor configurations, future-generation agents could offer more robust, generalized navigation capability against sensor noise, environmental complexity, and partial observability.
 
-=======
+
 
 # References
 
