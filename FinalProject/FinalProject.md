@@ -83,7 +83,7 @@ Figure 1 shows the distribution of each variable in the dataset.
 
 ![](Resources/VariableDistributions.png)
 
-We observe that all sensor readings, and distance to goal are right skewed distribution, reflecting the right skew in the distribution caused by larger frequency of smaller values.
+We observe that all sensor readings, and distance to goal are right skewed distributions, reflecting the prevalence of smaller distances and the diminishing frequency of larger distances in the readings.
 
 The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The balanced action distribution reduces class imbalance issues during training.
 
