@@ -6,21 +6,23 @@ August 11, 2025
 
 # Abstract
 
-Autonomous navigation through complex environments is a fundamental challenge in robotics and artificial intelligence. This project explores whether a robot can learn to navigate in a randomly generated two-dimensional world with obstacles using supervised learning. A world generator creates 30×30 grids populated with single-tile obstacles and random linear walls; an agent equipped with eight radial sensors receives the distance to the nearest obstacle in each direction together with its Euclidean distance to the goal. An A\* path-planner produces optimal actions, which serve as the supervisory signal for training. We perform exploratory data analysis to understand the distribution of sensor readings and evaluate multiple classification algorithms—including Random Forest, XGBoost, logistic regression, support vector machines, Naïve Bayes, K-nearest neighbors and a neural network—on the resulting dataset.
-
-We find that a wide variety of machine learning models are capable of generalizing obstacle avoidance and goal seeking behavior with the right features.
-
-Our analysis draws on related work in partially observable Markov decision processes, imitation learning and differentiable planning to contextualize the limitations and recommend future directions.
+Autonomous navigation through complex environments is a fundamental challenge in robotics and artificial intelligence. This project explores whether a robot can learn to navigate in a randomly generated two-dimensional world with obstacles using supervised learning. A world generator creates 2D maps populated with single-tile obstacles and random linear walls; an agent equipped with eight radial sensors. An A\* path-planner produces optimal actions, which serve as the supervisory signal for training. We perform exploratory data analysis and evaluate multiple classification algorithms—including Random Forest, XGBoost, logistic regression, support vector machines, Naïve Bayes, K-nearest neighbors and a neural network—on the resulting dataset. We find that a wide variety of machine learning models are capable of generalizing obstacle avoidance and goal seeking behavior with the right features. 
 
 Keywords: Autonomous Navigation, Supervised Learning, Path Planning, Sensor-Based Perception, Classification Algorithms
 
 # Robots in Random 2D Worlds
 
-Navigation in environments with uncertainty and partial observability is an important problem in artificial intelligence and robotics. Early research such as ALVINN demonstrated that a neural network could map raw sensory input to steering commands for an autonomous vehicle (Pomerleau, 1998). The formal framework for decision making with incomplete state information is the **partially observable Markov decision process** (POMDP), which models an agent that cannot directly observe the underlying state and must maintain a belief state (Delgado et al. 2016). [dksd: Consider clarifying that A* is used in fully observable domains, unlike POMDPs.] Solving POMDPs exactly is computationally hard, spurring the development of approximate planning and learning methods. A\* search, a heuristic graph-search algorithm that combines the actual cost of a path with an admissible heuristic estimate, remains the standard for optimal path finding in fully observable domains.
+Navigation in environments with uncertainty and partial observability is an important problem in artificial intelligence. 
 
-[dksd: Perhaps emphasize how A* provides a strong baseline or ideal policy.]
-[dksd: It would strengthen the narrative to include a sentence summarizing why this problem is interesting or practically relevant (e.g., ties to real-world robotics or simulation-based learning).]
-The final team project in our applied artificial intelligence course asks us to identify an AI-driven problem [dksd: seems too informal: rephrasing to focus on the research goal rather than the class assignment. ] , conduct a hands-on project and produce a report and presentation. We chose to investigate whether a robot can learn to navigate random two-dimensional environments with obstacles using supervised learning. Using A\* as an expert, we generate trajectories and collect sensor readings and actions. We then train a variety of classification models to predict the next move from sensor input, compare their performance and discuss the inherent limitations. Our objectives are to:
+======
+This problem has implications in robotics where self-navigating robots can replace humans to perform dangerous or mundane tasks such as self-driving cars, alien planet exploration, search and rescue, demining drones etc. In addition, this problem has applications in-game AI for video games.
+-----
+Even though our simulation is a simplified representation of the world, we believe that the findings are applicable to noisier real world applications such as search and rescue, delivery, self-driving.
+======
+
+
+
+In this study, we investigate whether a robot can learn to navigate random two-dimensional environments with obstacles using supervised learning. Using A\* as an expert, we generate trajectories and collect sensor readings and actions. We then train a variety of classification models to predict the next move from sensor input, compare their performance and discuss the inherent limitations. Our objectives are to:
 
 1. Define an artificial world and sensor model suitable for machine-learning experiments.
 2. Generate a labelled dataset by following optimal paths computed by A\*.
@@ -34,23 +36,21 @@ The final team project in our applied artificial intelligence course asks us to 
 [dksd: Move references to the end of the sentence or clause if they currently sit mid-sentence and break the flow.]
 The difficulty of learning navigation policies from supervised data is well recognized in the literature. Pomerleau’s ALVINN system imitated human steering by training on camera and laser readings【650549137831343†L85-L91】; while promising, it worked only on simple road scenes and suffered when the environment changed. Kaelbling, Littman and Cassandra formalized POMDPs (Partially Observable Markov Decision Processes), highlighting the challenge of acting under partial observability【141877599114902†L128-L145】. Later, Ross et al. introduced DAgger, an imitation-learning algorithm that addresses distribution shift by iteratively collecting expert feedback along the learner’s own trajectories【725851254557814†L8-L24】.
 
-Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time. [dksd: These architectures are especially suited for environments requiring memory of past observations] Such recurrent architectures could enable our agent to accumulate information about the goal’s direction across multiple steps. Tamar et al. introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration【380127289722745†L49-L58】. VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning. More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
+Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time. These architectures are especially suited for environments requiring memory of past observations. Such recurrent architectures could enable agents to accumulate information about the goal’s direction across multiple steps. Tamar et al. introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration【380127289722745†L49-L58】. VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning. More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
 
-Codevilla et al. show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. Therefore, evaluation metrics should include path efficiency [dksd: accuracy of action prediction.], collision rates and goal success rather than solely action prediction accuracy. Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
+Codevilla et al. show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. Therefore, evaluation metrics should include path efficiency, collision rates and goal success rather than solely action prediction accuracy. Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
 
 ## 3. Methodology
 
 ### 3.1 World generation and sensors
 
-The environment is a square grid of size 20×20. A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.2`) and adds several horizontal or vertical walls of random lengths. The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle. Each simulation generates a new world, ensuring a diverse set of layouts. The agent can move in eight directions corresponding to the Moore neighborhood [N, NE, E, SE, S, SW, W, NW].
+The environment is a bounded square grid of size 20×20. A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.2`) and adds several horizontal or vertical walls of random lengths. The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle. Each simulation generates a new world, ensuring a diverse set of layouts. The agent can move in eight directions corresponding to the Moore neighborhood [N, NE, E, SE, S, SW, W, NW].
 
-To navigate, the agent initially received local information solely from eight radial distance sensors. Each sensor reports the number of unobstructed tiles from the agent’s position in one of eight directions, up to the nearest wall or obstacle. As part of our methodology to improve learning performance, we incrementally introduced additional features. [dksd: Clarify whether the world is bounded, wraps around, or treats out-of-bounds tiles as implicit walls.]
+To navigate, the agent initially received local information solely from eight radial distance sensors. Each sensor reports the number of unobstructed tiles from the agent’s position in one of eight directions, up to the nearest wall or obstacle. As part of our methodology to improve learning performance, we incrementally introduced additional features. 
 
-First, we added the [Use the Manhattan distance or Chebyshev distance] Euclidean distance to the goal, giving the agent a global sense of how far it remained from its objective. This feature provided useful context that wasn't captured by the local sensors alone, helping guide movement decisions more effectively.
+First, we added the Euclidean distance to the goal, giving the agent a global sense of how far it remained from its objective. This feature provided useful context that wasn't captured by the local sensors alone, helping guide movement decisions more effectively.
 
 We then added goal direction as computed angle in radians between the agent and the goal to give more spatial context.
-
-We also explored normalizing the direction to the goal as a unit vector, which offered a modest but consistent performance boost by encoding directional intent in a format that complements the sensor layout. [dksd: Add a technical note explaining why unit vectors may outperform raw angles.]
 
 With these enhancements, the final raw state representation consisted of sensor_0 to sensor_7, the distance_to_goal, and the goal_direction and the target variable was the action chosen by A\*—an integer from 0 to 7 representing one of the eight possible moves.
 
@@ -64,7 +64,7 @@ A\* search uses a priority queue to explore nodes with the lowest estimated tota
 | `run_id`                   | Simulation run identifier                                                  |
 | `position_x`, `position_y` | Agent’s coordinates (not used as features)                                 |
 | `sensor_0…sensor_7`        | Distances to nearest obstacle in eight directions                          |
-| `distance_to_goal`         | Euclidean distance[dksd: manhatten] to goal                                |
+| `distance_to_goal`         | Euclidean distance to goal                                |
 | `path_length`              | Steps taken so far                                                         |
 | `goal_direction`           | The calculated angle between the current position and the goal, in radians |
 | `action`                   | Optimal move (0–7) as determined by A\*                                    |
@@ -76,6 +76,17 @@ We generated multiple batches of data:
 - action_sensor+dist_dir_10k: Sample size 10000 runs (118211 labelled instances), `goal direction` as a feature
 - action_sensor+dist_dir_10k_3walls: Sample size 10000 runs (118211 labelled instances), `goal direction` as a feature with 3 walls
 
+### 3.3 Evaluation metrics and performance criteria
+
+==========
+
+To evaluate the models and compare them, we primarily used accuracy scores. Accuracy scores measure the percentage of correct predictions made by the model on a test dataset. It is a good first-line estimator of capabilities although it does have limitations when the classes are imbalanced.
+
+However since our EDA shows that our classes are well-balanced, accuracy is an appropriate metric.
+
+In addition, we used a simulator to visually inspect the model navigating a as-of-yet unseen maze to confirm that the results were satisfactory.
+
+
 ### 3.3 Exploratory data analysis
 
 #### 3.3.1 Distributions
@@ -86,15 +97,18 @@ Figure 1 shows the distribution of each variable in the dataset.
 
 ![](Resources/VariableDistributions.png)
 
-We observe that all sensor readings, and distance to goal exhibit a gamma (?) distribution, reflecting the right skew in the distribution caused by larger frequency of smaller values.
+We observe that all sensor readings, and distance to goal are right skewed distribution, reflecting the right skew in the distribution caused by larger frequency of smaller values.
 
 [dksd: explicitly state that the balanced action distribution reduces class imbalance issues during training.] The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The relative uniformity of the distribution across class labels stands to give a good training signal for each class.[dksd: consistent with a right-skewed distribution.]
 
 #### 3.3.2 Run level variability
 
+To ensure that world configurations are evenly represented across runs, we conducted a comprehensive run variability study.
+
 ![](Resources/RunAnalysis.png)
 
-// TODO: Expand on that
+The absence of distribution skew across sensors shows a good representation of world configurations across worlds.
+
 
 ### 3.4 Shifting-signals problem and information asymmetry
 
@@ -102,7 +116,9 @@ An important observation from EDA is that identical sensor readings can correspo
 
 To quantify this phenomenon, we grouped training samples by sensor value patterns, and counted the percentage of unique patterns which had conflicting action labels with and without goal direction. We found that 31.7% of the patterns had conflicts without goal direction whereas only 8.8% had conflicts with goal direction.
 
-To help visualize the problem further, we performed a full-fledged feature uniqueness analysis:
+To help visualize the problem further, we performed a full-fledged feature uniqueness analysis. 
+
+This shows that in the absence of goal direction information, the model leans on a arbitrary feature feature (sensor 6) as the discriminant feature, whereas once goal direction is added, it becomes the discriminant feature.
 
 without goal direction:
 
@@ -195,7 +211,10 @@ Overall, these findings indicate that shallower networks with fewer layers and m
 
 ## 6. Discussion
 
-1. **Information asymmetry makes behavior cloning unsuitable in the absence of additional context.** The agent’s sensors provide only local glimpses of the environment, whereas A\* has complete global knowledge. This gap leads to inconsistent labels for identical inputs. Adding goal direction as a feature solved that.
+=======
+// Max and Dylan to rewrite this
+
+1. **Information asymmetry makes behavior cloning unsuitable** The agent’s sensors provide only local glimpses of the environment, whereas A\* has complete global knowledge. This gap leads to inconsistent labels for identical inputs. Adding goal direction as a feature solved that.
 
 2. **Imbalanced action distribution skews learning.** Certain actions (e.g., moving straight toward the goal) dominate the dataset, causing models to over-predict those classes and under-learn rare but necessary actions such as detours or backtracking. Techniques such as class weighting or sampling could mitigate this but do not address the root cause.
 
@@ -203,12 +222,22 @@ Overall, these findings indicate that shallower networks with fewer layers and m
 
 4. **Evaluation metrics should measure navigation performance, not just action prediction.** High agreement with the expert’s actions does not guarantee reaching the goal efficiently. Future studies should evaluate path length, goal completion rate and collision frequency.
 
-### 5.1 Potential improvements
+### 6 Future 
 
-- **Reduce sensor range** to two or three tiles to encourage repeated patterns and limit the feature space. This would make nearest-neighbor methods more meaningful and reduce contradictions.
-- **Augment features** with the relative angle to the goal rather than just the Euclidean distance; this provides directional context without revealing the entire map.
-- **Incorporate memory** using recurrent networks (e.g., LSTM) to aggregate information across multiple steps. Such models can build an implicit belief about the environment, analogous to DRQN for POMDPs.
-- **Use imitation-learning algorithms such as DAgger**, which query the expert for additional labels when the learner deviates. This ensures that data covers states likely under the learned policy and reduces distribution shift.
+======
+Max:
+
+Given the constraints we set out, I think we have maximize the capabilities of AI models to solve the problem, and that the next steps would involved:
+
+- making the world more complex
+- adopting the kind of techniques mentioned in the literature review (the more advanced techniques like Alpha Star)
+
+I would want to investigate the obstacle avoidance problem (the limitations of what we have achieved is that it doesn't know how to plan) 
+
+
+======
+Dylan
+
 
 - **Explore alternative models**
 
@@ -222,9 +251,29 @@ Overall, these findings indicate that shallower networks with fewer layers and m
 
 For our current dataset and imitation-learning setup, tree-based models like XGBoost and neural network models like MLP performed well, but if the system is extended to more complicated spatial or temporal context, these advanced architectures might yield further improvements.
 
+=======
+Original:
+
+- **Reduce sensor range** to two or three tiles to encourage repeated patterns and limit the feature space. This would make nearest-neighbor methods more meaningful and reduce contradictions.
+- **Augment features** with the relative angle to the goal rather than just the Euclidean distance; this provides directional context without revealing the entire map.
+- **Incorporate memory** using recurrent networks (e.g., LSTM) to aggregate information across multiple steps. Such models can build an implicit belief about the environment, analogous to DRQN for POMDPs.
+- **Use imitation-learning algorithms such as DAgger**, which query the expert for additional labels when the learner deviates. This ensures that data covers states likely under the learned policy and reduces distribution shift.
+
+
+
+
+
+======
+
 ## 6 Conclusion
 
+======
+Rewrite this:
+
 This project investigated whether an agent could learn to navigate randomly generated two-dimensional worlds with obstacles using supervised learning. By generating a dataset of optimal actions via A\* and training multiple classifiers, we found that the problem is inherently ill-posed. Identical sensor inputs often correspond to different optimal moves because of the agent’s limited field of view and the influence of the goal’s location. Consequently, even high-capacity models such as Random Forest and XGBoost achieve only ~0.37 accuracy, and other methods perform worse. The experience underscores the limitations of behavior cloning in partially observable environments and highlights the need for algorithms that incorporate planning, memory and exploration. Future work should consider imitation-learning algorithms that handle distribution shift, recurrent architectures, differentiable planners and reinforcement learning to overcome the information asymmetry and achieve robust navigation.
+
+
+=======
 
 # References
 
