@@ -222,7 +222,7 @@ Overall, these findings indicate that shallower networks with fewer layers and m
 
 4. **Evaluation metrics should measure navigation performance, not just action prediction.** High agreement with the expert’s actions does not guarantee reaching the goal efficiently. Future studies should evaluate path length, goal completion rate and collision frequency.
 
-### 6 Future 
+### 7 Future Work
 
 ======
 Max:
@@ -260,12 +260,9 @@ Original:
 - **Use imitation-learning algorithms such as DAgger**, which query the expert for additional labels when the learner deviates. This ensures that data covers states likely under the learned policy and reduces distribution shift.
 
 
-
-
-
 ======
 
-## 6 Conclusion
+## 8 Conclusion
 
 ======
 Rewrite this:
