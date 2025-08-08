@@ -6,21 +6,13 @@ August 11, 2025
 
 # Abstract
 
-Autonomous navigation through complex environments is a fundamental challenge in robotics and artificial intelligence. This project explores whether a robot can learn to navigate in a randomly generated two-dimensional world with obstacles using supervised learning. A world generator creates 2D maps populated with single-tile obstacles and random linear walls; an agent equipped with eight radial sensors. An A\* path-planner produces optimal actions, which serve as the supervisory signal for training. We perform exploratory data analysis and evaluate multiple classification algorithms—including Random Forest, XGBoost, logistic regression, support vector machines, Naïve Bayes, K-nearest neighbors and a neural network—on the resulting dataset. We find that a wide variety of machine learning models are capable of generalizing obstacle avoidance and goal seeking behavior with the right features. 
+Autonomous navigation through complex environments is a fundamental challenge in robotics and artificial intelligence. This project explores whether a robot can learn to navigate in a randomly generated two-dimensional world with obstacles using supervised learning. A world generator creates 2D maps populated with single-tile obstacles and random linear walls; an agent equipped with eight radial sensors is tasked with navigating between two randomly selected points while avoiding obstacles. An A\* path-planner produces optimal actions, which serve as the supervisory signal for training. We perform exploratory data analysis and evaluate multiple classification algorithms—including Random Forest, XGBoost, logistic regression, support vector machines, Naïve Bayes, K-nearest neighbors and a neural network—on the resulting dataset. We find that a wide variety of machine learning models are capable of generalizing obstacle avoidance and goal seeking behavior with the right features. 
 
 Keywords: Autonomous Navigation, Supervised Learning, Path Planning, Sensor-Based Perception, Classification Algorithms
 
 # Robots in Random 2D Worlds
 
-Navigation in environments with uncertainty and partial observability is an important problem in artificial intelligence. 
-
-======
-This problem has implications in robotics where self-navigating robots can replace humans to perform dangerous or mundane tasks such as self-driving cars, alien planet exploration, search and rescue, demining drones etc. In addition, this problem has applications in-game AI for video games.
------
-Even though our simulation is a simplified representation of the world, we believe that the findings are applicable to noisier real world applications such as search and rescue, delivery, self-driving.
-======
-
-
+AI models capable of navigating partially observable environments under uncertainty have significant potential across various fields, including self-driving cars, exploration, search and rescue missions and military uses.
 
 In this study, we investigate whether a robot can learn to navigate random two-dimensional environments with obstacles using supervised learning. Using A\* as an expert, we generate trajectories and collect sensor readings and actions. We then train a variety of classification models to predict the next move from sensor input, compare their performance and discuss the inherent limitations. Our objectives are to:
 
@@ -28,23 +20,21 @@ In this study, we investigate whether a robot can learn to navigate random two-d
 2. Generate a labelled dataset by following optimal paths computed by A\*.
 3. Analyze the dataset to understand feature distributions, correlations and potential issues such as label contradictions.
 4. Train and evaluate different machine-learning algorithms on the navigation problem.
-5. Relate our findings to the broader literature on learning-based navigation and imitation learning. [dksd: seems too broad]
-   [dksd: None of the points explicitly mention evaluation metrics or performance criteria for the models]
+
 
 # 2. Literature review
 
-[dksd: Move references to the end of the sentence or clause if they currently sit mid-sentence and break the flow.]
-The difficulty of learning navigation policies from supervised data is well recognized in the literature. Pomerleau’s ALVINN system imitated human steering by training on camera and laser readings【650549137831343†L85-L91】; while promising, it worked only on simple road scenes and suffered when the environment changed. Kaelbling, Littman and Cassandra formalized POMDPs (Partially Observable Markov Decision Processes), highlighting the challenge of acting under partial observability【141877599114902†L128-L145】. Later, Ross et al. introduced DAgger, an imitation-learning algorithm that addresses distribution shift by iteratively collecting expert feedback along the learner’s own trajectories【725851254557814†L8-L24】.
+The difficulty of learning navigation policies from supervised data is well recognized in the literature. Pomerleau’s ALVINN system imitated human steering by training on camera and laser readings; while promising, it worked only on simple road scenes and suffered when the environment changed (1988). Kaelbling, Littman and Cassandra formalized POMDPs (Partially Observable Markov Decision Processes), highlighting the challenge of acting under partial observability (1998). Later, Ross et al. introduced DAgger, an imitation-learning algorithm that addresses distribution shift by iteratively collecting expert feedback along the learner’s own trajectories (2011).
 
-Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time. These architectures are especially suited for environments requiring memory of past observations. Such recurrent architectures could enable agents to accumulate information about the goal’s direction across multiple steps. Tamar et al. introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration【380127289722745†L49-L58】. VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning. More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
+Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time (2015). These architectures are especially suited for environments requiring memory of past observations. Such recurrent architectures could enable agents to accumulate information about the goal’s direction across multiple steps. Tamar et al. introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration (2017). VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning. More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
 
-Codevilla et al. show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. Therefore, evaluation metrics should include path efficiency, collision rates and goal success rather than solely action prediction accuracy. Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
+Codevilla et al. (2019) show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. Therefore, evaluation metrics should include path efficiency, collision rates and goal success rather than solely action prediction accuracy. Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
 
 ## 3. Methodology
 
 ### 3.1 World generation and sensors
 
-The environment is a bounded square grid of size 20×20. A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.2`) and adds several horizontal or vertical walls of random lengths. The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle. Each simulation generates a new world, ensuring a diverse set of layouts. The agent can move in eight directions corresponding to the Moore neighborhood [N, NE, E, SE, S, SW, W, NW].
+The environment is a bounded square grid of size 20×20. A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.2`) and adds several horizontal or vertical walls of random lengths. The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle. Each simulation generates a new world, ensuring a diverse set of layouts. The agent can move in eight directions corresponding to the Moore neighborhood (N, NE, E, SE, S, SW, W, NW).
 
 To navigate, the agent initially received local information solely from eight radial distance sensors. Each sensor reports the number of unobstructed tiles from the agent’s position in one of eight directions, up to the nearest wall or obstacle. As part of our methodology to improve learning performance, we incrementally introduced additional features. 
 
@@ -78,13 +68,9 @@ We generated multiple batches of data:
 
 ### 3.3 Evaluation metrics and performance criteria
 
-==========
+To evaluate the models and compare them, we primarily used accuracy scores. Accuracy scores measure the percentage of correct predictions made by the model on a test dataset. It is a good first-line estimator of capabilities although it does have limitations when the classes are imbalanced. However since our EDA shows that our classes are well-balanced, accuracy is an appropriate metric.
 
-To evaluate the models and compare them, we primarily used accuracy scores. Accuracy scores measure the percentage of correct predictions made by the model on a test dataset. It is a good first-line estimator of capabilities although it does have limitations when the classes are imbalanced.
-
-However since our EDA shows that our classes are well-balanced, accuracy is an appropriate metric.
-
-In addition, we used a simulator to visually inspect the model navigating a as-of-yet unseen maze to confirm that the results were satisfactory.
+In addition, we used a simulator to observe the trained models navigate new randomly generated worlds in real time.
 
 
 ### 3.3 Exploratory data analysis
@@ -99,7 +85,7 @@ Figure 1 shows the distribution of each variable in the dataset.
 
 We observe that all sensor readings, and distance to goal are right skewed distribution, reflecting the right skew in the distribution caused by larger frequency of smaller values.
 
-[dksd: explicitly state that the balanced action distribution reduces class imbalance issues during training.] The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The relative uniformity of the distribution across class labels stands to give a good training signal for each class.[dksd: consistent with a right-skewed distribution.]
+The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The balanced action distribution reduces class imbalance issues during training.
 
 #### 3.3.2 Run level variability
 
@@ -107,7 +93,7 @@ To ensure that world configurations are evenly represented across runs, we condu
 
 ![](Resources/RunAnalysis.png)
 
-The absence of distribution skew across sensors shows a good representation of world configurations across worlds.
+The absence of distribution skew across sensors shows a good representation of world configurations across runs.
 
 
 ### 3.4 Shifting-signals problem and information asymmetry
@@ -118,7 +104,7 @@ To quantify this phenomenon, we grouped training samples by sensor value pattern
 
 To help visualize the problem further, we performed a full-fledged feature uniqueness analysis. 
 
-This shows that in the absence of goal direction information, the model leans on a arbitrary feature feature (sensor 6) as the discriminant feature, whereas once goal direction is added, it becomes the discriminant feature.
+This shows that in the absence of goal direction information, the model leans on a arbitrary feature (sensor 6) as the discriminant feature and is not able to clearly discriminate between actions. Once goal direction is added, the actions are are clearly differentiated and the goal direction becomes the dominating discriminant.
 
 without goal direction:
 
@@ -179,7 +165,7 @@ We were able to visualize the decision-making abilities of the various models by
 
 The models demonstrated generalization to novel maze configurations, effectively avoiding illegal moves (e.g., walking into walls) and progressing toward goals. This suggests that the models have learned underlying spatial heuristics rather than memorizing training trajectories.
 
-It is interesting to note that even though the trained models were able to emulate A\* behavior when the solution did not involve bypassing large obstacles, their ability to reason their way around obstacles broke down when the path involved more than 3-4 tiles away from the goal direction.
+It is interesting to note that even though the trained models were able to emulate A\* behavior when the solution did not involve bypassing large obstacles, their ability to reason their way around obstacles broke down when the path involved moving more than 3-4 tiles away from the goal direction.
 
 ![](Resources/Sad.png)
 
@@ -274,24 +260,26 @@ This project investigated whether an agent could learn to navigate randomly gene
 
 # References
 
-- Barreto, A., Dabney, W., Munos, R., Hunt, J. J., Schaul, T., van Hasselt, H., & Silver, D. (2018). _Successor features for transfer in reinforcement learning_. arXiv. <https://arxiv.org/abs/1606.05312>
+- Barreto, A., Dabney, W., Munos, R., Hunt, J. J., Schaul, T., van Hasselt, H., & Silver, D. (2018). Successor features for transfer in reinforcement learning. _arXiv_. <https://arxiv.org/abs/1606.05312>
 
-- Codevilla, F., Santana, E., López, A. M., & Gaidon, A. (2019). _Exploring the limitations of behavior cloning for autonomous driving_. arXiv. <https://arxiv.org/abs/1904.08980>
+- Codevilla, F., Santana, E., López, A. M., & Gaidon, A. (2019). Exploring the limitations of behavior cloning for autonomous driving. _arXiv_. <https://arxiv.org/abs/1904.08980>
 
-- Delgado, K. V., de Barros, L. N., Dias, D. B., & Sanner, S. (2016). _Real-time dynamic programming for Markov decision processes with imprecise probabilities_. _Artificial Intelligence, 230_, 192-223. <https://doi.org/10.1016/j.artint.2015.09.005>
+- Delgado, K. V., de Barros, L. N., Dias, D. B., & Sanner, S. (2016). Real-time dynamic programming for Markov decision processes with imprecise probabilities. _Artificial Intelligence, 230_, 192-223. <https://doi.org/10.1016/j.artint.2015.09.005>
 
 - Hausknecht, M. J., & Stone, P. (2015). _Deep recurrent Q-learning for partially observable MDPs_. arXiv. <http://arxiv.org/abs/1507.06527>
 
-- Mathieu, M., Ozair, S., Srinivasan, S., Gulcehre, C., Zhang, S., Jiang, R., Le Paine, T., Powell, R., Żołna, K., Schrittwieser, J., Choi, D., Georgiev, P., Toyama, D., Huang, A., Ring, R., Babuschkin, I., Ewalds, T., Bordbar, M., Henderson, S., ... Vinyals, O. (2023). _AlphaStar Unplugged: Large-scale offline reinforcement learning_. arXiv. <https://arxiv.org/abs/2308.03526>
+- Kaelbling, L. P., Littman, M. L., & Cassandra, A. R. (1998). Planning and acting in partially observable stochastic domains. _Artificial Intelligence, 101_(1), 99–134. https://doi.org/10.1016/S0004-3702(98)00023-X
 
-- Parisotto, E., & Salakhutdinov, R. (2017). _Neural Map: Structured memory for deep reinforcement learning_. arXiv. <https://arxiv.org/abs/1702.08360>
+- Mathieu, M., Ozair, S., Srinivasan, S., Gulcehre, C., Zhang, S., Jiang, R., Le Paine, T., Powell, R., Żołna, K., Schrittwieser, J., Choi, D., Georgiev, P., Toyama, D., Huang, A., Ring, R., Babuschkin, I., Ewalds, T., Bordbar, M., Henderson, S., ... Vinyals, O. (2023). AlphaStar Unplugged: Large-scale offline reinforcement learning. _arXiv_. <https://arxiv.org/abs/2308.03526>
 
-- Petrović, L. (2018). _Motion planning in high-dimensional spaces_. arXiv. <https://arxiv.org/abs/1806.07457>
+- Parisotto, E., & Salakhutdinov, R. (2017). Neural Map: Structured memory for deep reinforcement learning. _arXiv_. <https://arxiv.org/abs/1702.08360>
 
-- Pomerleau, D. A. (1988). _ALVINN: An autonomous land vehicle in a neural network_. In D. Touretzky (Ed.), _Advances in Neural Information Processing Systems_ (Vol. 1). Morgan Kaufmann. <https://proceedings.neurips.cc/paper_files/paper/1988/file/812b4ba287f5ee0bc9d43bbf5bbe87fb-Paper.pdf>
+- Petrović, L. (2018). Motion planning in high-dimensional spaces. _arXiv_. <https://arxiv.org/abs/1806.07457>
 
-- Ross, S., Gordon, G. J., & Bagnell, J. A. (2011). _A reduction of imitation learning and structured prediction to no-regret online learning_. arXiv. <https://arxiv.org/abs/1011.0686>
+- Pomerleau, D. A. (1988). ALVINN: An autonomous land vehicle in a neural network. In D. Touretzky (Ed.), _Advances in Neural Information Processing Systems_ (Vol. 1). Morgan Kaufmann. <https://proceedings.neurips.cc/paper_files/paper/1988/file/812b4ba287f5ee0bc9d43bbf5bbe87fb-Paper.pdf>
 
-- Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2017). _Value iteration networks_. arXiv. <https://arxiv.org/abs/1602.02867>
+- Ross, S., Gordon, G. J., & Bagnell, J. A. (2011). A reduction of imitation learning and structured prediction to no-regret online learning. _arXiv_. <https://arxiv.org/abs/1011.0686>
 
-- Xia, F., Li, C., Chen, K., Shen, W. B., Martín-Martín, R., Hirose, N., Zamir, A. R., Fei-Fei, L., & Savarese, S. (2019, June 16). _Gibson Env V2: Embodied simulation environments for interactive navigation_ (Tech. Rep.). Stanford University. <http://svl.stanford.edu/gibson2>
+- Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2017). Value iteration networks. _arXiv_. <https://arxiv.org/abs/1602.02867>
+
+- Xia, F., Li, C., Chen, K., Shen, W. B., Martín-Martín, R., Hirose, N., Zamir, A. R., Fei-Fei, L., & Savarese, S. (2019, June 16). Gibson Env V2: Embodied simulation environments for interactive navigation (Tech. Rep.). _Stanford University_. <http://svl.stanford.edu/gibson2>
