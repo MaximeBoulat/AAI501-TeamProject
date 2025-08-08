@@ -71,9 +71,9 @@ To evaluate the models and compare them, we primarily used accuracy scores. Accu
 
 In addition, we used a simulator to observe the trained models navigate new randomly generated worlds in real time.
 
-## 4 Exploratory data analysis
+### 3.3 Exploratory data analysis
 
-### 4.1 Distributions
+#### 3.3.1 Distributions
 
 We performed exploratory data analysis (EDA) on the dataset to understand feature distributions and potential issues.
 
@@ -85,7 +85,7 @@ We observe that all sensor readings, and distance to goal are right skewed distr
 
 The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The balanced action distribution reduces class imbalance issues during training.
 
-### 4.2 Run level variability
+#### 3.3.2 Run level variability
 
 To ensure that world configurations are evenly represented across runs, we conducted a comprehensive run variability study.
 
@@ -93,7 +93,7 @@ To ensure that world configurations are evenly represented across runs, we condu
 
 The absence of distribution skew across sensors shows a good representation of world configurations across runs.
 
-### 4.3 Shifting-signals problem and information asymmetry
+### 3.4 Shifting-signals problem and information asymmetry
 
 An important observation from EDA is that identical sensor readings can correspond to different optimal actions depending on the global arrangement of obstacles and the relative position of the goal. For example, two states with the same local obstacles may require moving northeast in one case and southwest in another if the goal lies in different directions. A\* can resolve this because it has global knowledge of the grid, but the machine-learning model sees only local distances and a scalar goal distance. This **information asymmetry** leads to **shifting signals**: identical inputs with opposite labels.
 

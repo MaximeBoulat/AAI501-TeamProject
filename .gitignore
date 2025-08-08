@@ -7,3 +7,9 @@ __pycache__/
 *.pyc
 
 worlds
+
+# build artifacts
+model_results.csv
+models
+training_data*.csv
+
