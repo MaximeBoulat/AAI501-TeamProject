@@ -71,9 +71,9 @@ To evaluate the models and compare them, we primarily used accuracy scores. Accu
 
 In addition, we used a simulator to observe the trained models navigate new randomly generated worlds in real time.
 
-### 3.3 Exploratory data analysis
+## 4. Exploratory data analysis
 
-#### 3.3.1 Distributions
+### 4.1 Distributions
 
 We performed exploratory data analysis (EDA) on the dataset to understand feature distributions and potential issues.
 
@@ -85,7 +85,7 @@ We observe that all sensor readings, and distance to goal are right skewed distr
 
 The distribution of the action variable is well balanced across all 8 possible actions, with a slight convergence of the lateral/vertical actions over the diagonal ones. The balanced action distribution reduces class imbalance issues during training.
 
-#### 3.3.2 Run level variability
+### 4.2 Run level variability
 
 To ensure that world configurations are evenly represented across runs, we conducted a comprehensive run variability study.
 
@@ -93,7 +93,7 @@ To ensure that world configurations are evenly represented across runs, we condu
 
 The absence of distribution skew across sensors shows a good representation of world configurations across runs.
 
-### 3.4 Shifting-signals problem and information asymmetry
+### 4.3 Shifting-signals problem and information asymmetry
 
 An important observation from EDA is that identical sensor readings can correspond to different optimal actions depending on the global arrangement of obstacles and the relative position of the goal. For example, two states with the same local obstacles may require moving northeast in one case and southwest in another if the goal lies in different directions. A\* can resolve this because it has global knowledge of the grid, but the machine-learning model sees only local distances and a scalar goal distance. This **information asymmetry** leads to **shifting signals**: identical inputs with opposite labels.
 
@@ -111,9 +111,9 @@ with goal direction:
 
 ![](Resources/GoalDirectionAfter.png)
 
-# 4 Model selection and training
+# 5 Model selection and training
 
-## 4.1 Overview
+## 5.1 Overview
 
 We compared a selection of classification models in scikit-learn and the XGBoost library. All models were trained to output the optimal action based on the eight sensor distances and goal distance. We performed stratified 80/20 train-tests, so each action class was present in each subset approximately in proportion. The models and their training parameters were:
 
@@ -131,7 +131,7 @@ We compared a selection of classification models in scikit-learn and the XGBoost
 
 **Neural Network (MLP)** – A multi-layer perceptron with multiple layers of hidden units using ReLU activations. This architecture has sufficient capacity to learn complex non-linear patterns in the sensor signals.
 
-## 4.2 Choosing Appropriate Algorithm Structures
+## 5.2 Choosing Appropriate Algorithm Structures
 
 Selecting the right structure for the various AI selected models, for example, the neural network architecture is a critical part of our methodology. The structure of the network—including the number of layers, the number of units per layer, activation functions, and regularization strategies—can significantly affect the model's ability to learn from the input features and generalize to new environments.
 
@@ -140,7 +140,7 @@ The choice of output representation (categorical vs. continuous ŷ) also influen
 
 This iterative tuning of network structure was essential to achieving reliable performance and forms a core part of our methodology.
 
-## 5 Results
+## 6. Results
 
 | Model                  | goal_dist_3k | goal_dist+goal_dir_3k | dist+goal_dir_10k | dist+goal_dir_3walls_10k |
 | ---------------------- | ------------ | --------------------- | ----------------- | ------------------------ |
@@ -166,7 +166,7 @@ It is interesting to note that even though the trained models were able to emula
 
 ![](Resources/Sad.png)
 
-### Selecting Neural Network Architecture
+### 6.1  Selecting Neural Network Architecture
 
 To observe how neural network architecture influences performance on our dataset, we experimented with several multi-layer perceptron (MLP) setups by varying both the number of layers (2 vs. 3) and the number of neurons per layer (16 to 256). We chose the more difficult dataset of `dist+goal_dir_3walls_10k`
 to see if we could extract any further performance. We observe that 2-layer MLPs perform better than deeper 3-layer ones, with the highest performance (0.846 accuracy) achieved by the [64, 32] setup. Wider architectures like [128, 64] and [256, 128] performed worse, possibly due to over-fitting or less generalization capacity for the dataset size.
@@ -192,12 +192,12 @@ In addition, funnel-shaped architectures (i.e., decreasing width between layers)
 
 Overall, these findings indicate that shallower networks with fewer layers and medium width are more suitable for this dataset. Depth and width must both be carefully tuned, especially when there is limited training data or minimal regularization.
 
-## 6. Discussion
+## 7. Discussion
 
 
 The results demonstrate that introducing goal direction as a feature yields substantial performance gains across all models, particularly for otherwise uncertain sensor input situations. Ensemble methods, specifically Random Forest and XGBoost, posted the highest and most consistent accuracies, with both achieving 0.889 on the `dist+goal_dir_10k` dataset, indicating their robustness to moderately elevated environmental complexity. The Neural Network also performed well, achieving competitive performance with ensembles, and SVMs improved with the extra directional context but remained slightly less competitive. These results highlight the fact that providing richer spatial information greatly reduces label conflicts arising due to information asymmetry. However, the decrease in performance in the `dist+goal_dir_3walls_10k` condition reveals deficiency in partial observability and more complex obstacle situations, where local distance sensors, especially noisy sensors, cannot fully sense the global navigational space. This means that subsequent research will need to explore more sophisticated representations, such as the application of learned spatial embeddings, memory-based networks, or noise-robust sensor fusion, and, in parallel, the addition of additional sensors to expand the observability field and engineering more features to encode relevant spatial and temporal information. These features could potentially allow models to generalize more abstractly about unseen barriers, reduce the impact of noisy measurements, and stabilize decisions in adverse conditions.
 
-### 7 Future Work
+### 8. Future Work
 
 
 Within the limits we established, our current approach has pushed the acuity of supervised AI models close to the limits for this task. Future efforts must include increasing the complexity of the environment and adopting more advanced learning paradigms that can handle planning, partial observability, and varied or noisy sensor inputs. On the environment side, this includes making the worlds progressively more complex—incorporating additional obstacles, varied layouts, and more challenging navigation constraints—to better mirror real-world environments. Incorporating additional sensors and features to provide richer spatial and temporal information, such as relative goal angles, local occupancy patterns, or derived spatial embeddings, could also reduce label ambiguity and improve performance.
@@ -206,7 +206,7 @@ On the modeling front, future work needs to investigate architectures better sui
 Collectively, these above approaches—feature engineering, sensors that are more informative, temporal modeling, and reinforcement learning—offer a path towards agents that plan, adapt, and navigate effectively in increasingly complex and noisy environments.
 
 
-## 8 Conclusion
+## 9. Conclusion
 
 
 This work investigated the impact that the feature design and model selection can have on learning navigation policies from local sensor measurements, in particular how information asymmetry and partial observability can cause conflicting action labels for otherwise identical sensors. Through running extensive experiments, we demonstrated that including distance features with goal direction significantly enhances performance across all tested models, where ensemble methods such as Random Forest and XGBoost achieved the most robust and highest accuracies. In spite of that, adding more challenging obstacle configurations revealed weaknesses in all models, most significantly under situations where local sensing cannot perceive the complete navigational context.
