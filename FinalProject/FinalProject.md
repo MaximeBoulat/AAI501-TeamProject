@@ -29,9 +29,9 @@ Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle par
 
 Codevilla et al. (2019) show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. Therefore, evaluation metrics should include path efficiency, collision rates and goal success rather than solely action prediction accuracy. Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
 
-## 3. Methodology
+# 3. Methodology
 
-### 3.1 World generation and sensors
+## 3.1 World generation and sensors
 
 The environment is a bounded square grid of size 20×20. A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.1`) and adds several horizontal or vertical walls of random lengths. The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle. Each simulation generates a new world, ensuring a diverse set of layouts. The agent can move in eight directions corresponding to the Moore neighborhood (N, NE, E, SE, S, SW, W, NW).
 
@@ -43,7 +43,7 @@ We then added goal direction as computed angle in radians between the agent and 
 
 With these enhancements, the final raw state representation consisted of sensor_0 to sensor_7, the distance_to_goal, and the goal_direction and the target variable was the action chosen by A\*—an integer from 0 to 7 representing one of the eight possible moves.
 
-### 3.2 Data generation using A\*
+## 3.2 Data generation using A\*
 
 A\* search uses a priority queue to explore nodes with the lowest estimated total cost (the cost so far plus a heuristic). We use the Euclidean distance to the goal as the heuristic. When constructing the dataset, we run A\* on each randomly generated world to compute an optimal path from the start to the goal. For every step along the path, we record the timestamp, run identifier, current position, the eight sensor readings, the Euclidean distance to the goal, the goal direction and the action taken. Listing 1 summarizes the data schema.
 
@@ -65,15 +65,15 @@ We generated multiple batches of data:
 - action_sensor+dist_dir_10k: Sample size 10000 runs (118211 labelled instances), `goal direction` as a feature
 - action_sensor+dist_dir_10k_3walls: Sample size 10000 runs (118211 labelled instances), `goal direction` as a feature with 3 walls
 
-### 3.3 Evaluation metrics and performance criteria
+## 3.3 Evaluation metrics and performance criteria
 
 To evaluate the models and compare them, we primarily used accuracy scores. Accuracy scores measure the percentage of correct predictions made by the model on a test dataset. It is a good first-line estimator of capabilities although it does have limitations when the classes are imbalanced. However since our EDA shows that our classes are well-balanced, accuracy is an appropriate metric.
 
 In addition, we used a simulator to observe the trained models navigate new randomly generated worlds in real time.
 
-## 4. Exploratory data analysis
+# 4. Exploratory data analysis
 
-### 4.1 Distributions
+## 4.1 Distributions
 
 We performed exploratory data analysis (EDA) on the dataset to understand feature distributions and potential issues.
 
@@ -140,7 +140,7 @@ The choice of output representation (categorical vs. continuous ŷ) also influen
 
 This iterative tuning of network structure was essential to achieving reliable performance and forms a core part of our methodology.
 
-## 6. Results
+# 6. Results
 
 | Model                  | goal_dist_3k | goal_dist+goal_dir_3k | dist+goal_dir_10k | dist+goal_dir_3walls_10k |
 | ---------------------- | ------------ | --------------------- | ----------------- | ------------------------ |
@@ -192,12 +192,12 @@ In addition, funnel-shaped architectures (i.e., decreasing width between layers)
 
 Overall, these findings indicate that shallower networks with fewer layers and medium width are more suitable for this dataset. Depth and width must both be carefully tuned, especially when there is limited training data or minimal regularization.
 
-## 7. Discussion
+# 7. Discussion
 
 
 The results demonstrate that introducing goal direction as a feature yields substantial performance gains across all models, particularly for otherwise uncertain sensor input situations. Ensemble methods, specifically Random Forest and XGBoost, posted the highest and most consistent accuracies, with both achieving 0.889 on the `dist+goal_dir_10k` dataset, indicating their robustness to moderately elevated environmental complexity. The Neural Network also performed well, achieving competitive performance with ensembles, and SVMs improved with the extra directional context but remained slightly less competitive. These results highlight the fact that providing richer spatial information greatly reduces label conflicts arising due to information asymmetry. However, the decrease in performance in the `dist+goal_dir_3walls_10k` condition reveals deficiency in partial observability and more complex obstacle situations, where local distance sensors, especially noisy sensors, cannot fully sense the global navigational space. This means that subsequent research will need to explore more sophisticated representations, such as the application of learned spatial embeddings, memory-based networks, or noise-robust sensor fusion, and, in parallel, the addition of additional sensors to expand the observability field and engineering more features to encode relevant spatial and temporal information. These features could potentially allow models to generalize more abstractly about unseen barriers, reduce the impact of noisy measurements, and stabilize decisions in adverse conditions.
 
-### 8. Future Work
+# 8. Future Work
 
 
 Within the limits we established, our current approach has pushed the acuity of supervised AI models close to the limits for this task. Future efforts must include increasing the complexity of the environment and adopting more advanced learning paradigms that can handle planning, partial observability, and varied or noisy sensor inputs. On the environment side, this includes making the worlds progressively more complex—incorporating additional obstacles, varied layouts, and more challenging navigation constraints—to better mirror real-world environments. Incorporating additional sensors and features to provide richer spatial and temporal information, such as relative goal angles, local occupancy patterns, or derived spatial embeddings, could also reduce label ambiguity and improve performance.
@@ -206,7 +206,7 @@ On the modeling front, future work needs to investigate architectures better sui
 Collectively, these above approaches—feature engineering, sensors that are more informative, temporal modeling, and reinforcement learning—offer a path towards agents that plan, adapt, and navigate effectively in increasingly complex and noisy environments.
 
 
-## 9. Conclusion
+# 9. Conclusion
 
 
 This work investigated the impact that the feature design and model selection can have on learning navigation policies from local sensor measurements, in particular how information asymmetry and partial observability can cause conflicting action labels for otherwise identical sensors. Through running extensive experiments, we demonstrated that including distance features with goal direction significantly enhances performance across all tested models, where ensemble methods such as Random Forest and XGBoost achieved the most robust and highest accuracies. In spite of that, adding more challenging obstacle configurations revealed weaknesses in all models, most significantly under situations where local sensing cannot perceive the complete navigational context.
