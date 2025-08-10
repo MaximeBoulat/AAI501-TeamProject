@@ -23,11 +23,11 @@ In this study, we investigate whether a robot can learn to navigate random two-d
 
 # 2. Literature review
 
-The difficulty of learning navigation policies from supervised data is well recognized in the literature. Pomerleau’s ALVINN system imitated human steering by training on camera and laser readings; while promising, it worked only on simple road scenes and suffered when the environment changed (1988). Kaelbling, Littman and Cassandra formalized POMDPs (Partially Observable Markov Decision Processes), highlighting the challenge of acting under partial observability (1998). Later, Ross et al. introduced DAgger, an imitation-learning algorithm that addresses distribution shift by iteratively collecting expert feedback along the learner’s own trajectories (2011).
+The difficulty of learning navigation policies from supervised data is well recognized in the literature. Pomerleau (1998) demonstrated the viability of training a neural network on camera and laser readings with the ALVINN system, a rudimentary self-driving truck capable of autonomous steering; while promising, it worked only on simple road scenes and suffered when the environment changed. Kaelbling, Littman and Cassandra (1998) formalized POMDPs (Partially Observable Markov Decision Processes), an extension of the Markov Decision Process method to the problem of optimizing route selection in the face of uncertainty. Later, Ross et al. (2011) introduced DAgger, an imitation-learning algorithm that addresses distribution shift by iteratively collecting expert feedback along the learner’s own trajectories.
 
-Hausknecht and Stone proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time (2015). These architectures are especially suited for environments requiring memory of past observations. Such recurrent architectures could enable agents to accumulate information about the goal’s direction across multiple steps. Tamar et al. introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration (2017). VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning. More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
+Hausknecht and Stone (2015) proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time. These architectures are especially suited for environments requiring memory of past observations. Such recurrent architectures could enable agents to accumulate information about the goal’s direction across multiple steps. Tamar et al. (2017) introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration. VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning. More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
 
-Codevilla et al. (2019) show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. Therefore, evaluation metrics should include path efficiency, collision rates and goal success rather than solely action prediction accuracy. Our use of accuracy and F1 score provides a first assessment but does not fully capture navigation quality.
+Highlighting the limitations of traditional model performance metrics in pathfinding problems, Codevilla et al. (2019) show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. They proposed new performance criteria such as path efficiency, collision rates and goal success rather than solely action prediction accuracy. 
 
 # 3. Methodology
 
@@ -217,21 +217,14 @@ These findings point to two key findings: one, that carefully designed features 
 
 # References
 
-- Barreto, A., Dabney, W., Munos, R., Hunt, J. J., Schaul, T., van Hasselt, H., & Silver, D. (2018). Successor features for transfer in reinforcement learning. _arXiv_. <https://arxiv.org/abs/1606.05312>
 
 - Codevilla, F., Santana, E., López, A. M., & Gaidon, A. (2019). Exploring the limitations of behavior cloning for autonomous driving. _arXiv_. <https://arxiv.org/abs/1904.08980>
-
-- Delgado, K. V., de Barros, L. N., Dias, D. B., & Sanner, S. (2016). Real-time dynamic programming for Markov decision processes with imprecise probabilities. _Artificial Intelligence, 230_, 192-223. <https://doi.org/10.1016/j.artint.2015.09.005>
 
 - Hausknecht, M. J., & Stone, P. (2015). _Deep recurrent Q-learning for partially observable MDPs_. arXiv. <http://arxiv.org/abs/1507.06527>
 
 - Kaelbling, L. P., Littman, M. L., & Cassandra, A. R. (1998). Planning and acting in partially observable stochastic domains. _Artificial Intelligence, 101_(1), 99–134. <https://doi.org/10.1016/S0004-3702(98)00023-X>
 
-- Mathieu, M., Ozair, S., Srinivasan, S., Gulcehre, C., Zhang, S., Jiang, R., Le Paine, T., Powell, R., Żołna, K., Schrittwieser, J., Choi, D., Georgiev, P., Toyama, D., Huang, A., Ring, R., Babuschkin, I., Ewalds, T., Bordbar, M., Henderson, S., ... Vinyals, O. (2023). AlphaStar Unplugged: Large-scale offline reinforcement learning. _arXiv_. <https://arxiv.org/abs/2308.03526>
-
 - Parisotto, E., & Salakhutdinov, R. (2017). Neural Map: Structured memory for deep reinforcement learning. _arXiv_. <https://arxiv.org/abs/1702.08360>
-
-- Petrović, L. (2018). Motion planning in high-dimensional spaces. _arXiv_. <https://arxiv.org/abs/1806.07457>
 
 - Pomerleau, D. A. (1988). ALVINN: An autonomous land vehicle in a neural network. In D. Touretzky (Ed.), _Advances in Neural Information Processing Systems_ (Vol. 1). Morgan Kaufmann. <https://proceedings.neurips.cc/paper_files/paper/1988/file/812b4ba287f5ee0bc9d43bbf5bbe87fb-Paper.pdf>
 
@@ -239,4 +232,3 @@ These findings point to two key findings: one, that carefully designed features 
 
 - Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2017). Value iteration networks. _arXiv_. <https://arxiv.org/abs/1602.02867>
 
-- Xia, F., Li, C., Chen, K., Shen, W. B., Martín-Martín, R., Hirose, N., Zamir, A. R., Fei-Fei, L., & Savarese, S. (2019, June 16). Gibson Env V2: Embodied simulation environments for interactive navigation (Tech. Rep.). _Stanford University_. <http://svl.stanford.edu/gibson2>
