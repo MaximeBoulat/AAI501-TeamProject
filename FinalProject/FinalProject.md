@@ -27,21 +27,16 @@ The difficulty of learning navigation policies from supervised data is well reco
 
 Hausknecht and Stone (2015) proposed the Deep Recurrent Q-Network (DRQN) to handle partially observable environments by maintaining a hidden state over time. These architectures are especially suited for environments requiring memory of past observations. Such recurrent architectures could enable agents to accumulate information about the goal’s direction across multiple steps. Tamar et al. (2017) introduced **Value Iteration Networks (VIN)**, neural networks that embed a differentiable planning module and learn to perform approximate value iteration. VINs have been applied to grid-world navigation and could provide a more principled way to combine local observations with implicit planning. More recent work such as Neural Map (Parisotto & Salakhutdinov, 2017) incorporates external memory to build an internal map, which is critical when the task requires exploration and recall of previously visited locations.
 
-Highlighting the limitations of traditional model performance metrics in pathfinding problems, Codevilla et al. (2019) show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. They proposed new performance criteria such as path efficiency, collision rates and goal success rather than solely action prediction accuracy. 
+Highlighting the limitations of traditional model performance metrics in pathfinding problems, Codevilla et al. (2019) show that behavior-cloned policies with high action agreement can still crash because they lack planning and fail to recover from mistakes. They proposed new performance criteria such as path efficiency, collision rates and goal success rather than solely action prediction accuracy.
 
 # 3. Methodology
 
 ## 3.1 World generation and sensors
 
-The environment is a bounded square grid of size 20×20. A world generator populates the grid with single-tile obstacles based on a probability (`obstacle_prob = 0.1`) and adds several horizontal or vertical walls of random lengths. The start and goal locations are randomly selected so that the Euclidean distance between them is at least eight cells and neither lies on an obstacle. Each simulation generates a new world, ensuring a diverse set of layouts. The agent can move in eight directions corresponding to the Moore neighborhood (N, NE, E, SE, S, SW, W, NW).
-
-To navigate, the agent initially received local information solely from eight radial distance sensors. Each sensor reports the number of unobstructed tiles from the agent’s position in one of eight directions, up to the nearest wall or obstacle. As part of our methodology to improve learning performance, we incrementally introduced additional features.
-
-First, we added the Euclidean distance to the goal, giving the agent a global sense of how far it remained from its objective. This feature provided useful context that wasn't captured by the local sensors alone, helping guide movement decisions more effectively.
-
-We then added goal direction as computed angle in radians between the agent and the goal to give more spatial context.
-
-With these enhancements, the final raw state representation consisted of sensor_0 to sensor_7, the distance_to_goal, and the goal_direction and the target variable was the action chosen by A\*—an integer from 0 to 7 representing one of the eight possible moves.
+The world is a 20×20 bounded square grid. A world generator populates the grid with single-cell obstacles based on a probability (obstacle_prob = 0.1) and adds a number of horizontal or vertical walls of random lengths. The goal and start points are randomly selected in such a way that the Euclidean distance between them is at least eight cells and that none of them is on an obstacle. Each simulation generates a new world, offering a diverse collection of layouts. The agent can move in eight directions corresponding to the Moore neighborhood (N, NE, E, SE, S, SW, W, NW).
+For navigation, the agent was initially provided with just local information from eight radial distance sensors. Each sensor reports the number of empty tiles from the agent's position in one of eight directions to the closest wall or barrier. Following our incremental approach to improving learning performance, we introduced additional features in a stepwise manner.
+We initially added the Euclidean distance to the target, providing the agent with a global measure of its distance from the target. This component provided useful context not available from the local sensors alone and helped to further inform movement choices.
+We also added goal direction as the computed angle in radians between the agent and the goal to add more spatial information. The final raw state representation, with these enhancements, was (sensor_0 to sensor_7), the (distance_to_goal), and the (goal_direction), and the target variable was the action taken by A\*, an integer from 0 to 7 representing one of the eight movements.
 
 ## 3.2 Data generation using A\*
 
@@ -133,12 +128,9 @@ We compared a selection of classification models in scikit-learn and the XGBoost
 
 ## 5.2 Choosing Appropriate Algorithm Structures
 
-Selecting the right structure for the various AI selected models, for example, the neural network architecture is a critical part of our methodology. The structure of the network—including the number of layers, the number of units per layer, activation functions, and regularization strategies—can significantly affect the model's ability to learn from the input features and generalize to new environments.
-
-We approached architecture selection empirically, starting with simple fully connected (feed-forward) networks and adjusting based on performance. Shallower networks tended to underfit the problem, especially once we introduced more nuanced features like distance_to_goal and normalized direction vectors. Deeper architectures provided the capacity to model more complex relationships between inputs and the optimal actions, but came with increased risk of over-fitting. We mitigated this using techniques such as dropout, early stopping, and batch normalization.
-The choice of output representation (categorical vs. continuous ŷ) also influenced architecture decisions. For classification targets, a `softmax` output layer paired with cross-entropy loss was appropriate. For continuous direction vectors, we used a linear output layer and optimized with mean squared error (MSE). In both cases, the architecture had to align with the nature of the prediction target to ensure stable and effective learning.
-
-This iterative tuning of network structure was essential to achieving reliable performance and forms a core part of our methodology.
+Selecting the right structure for the various AI-based models, e.g., the architecture for the neural network, is a crucial part of our approach. Network structure like the number of layers, the units per layer, the activation functions, and regularization techniques plays a tremendous role in the ability of the model to learn from the input features and generalize to novel environments.
+We experimented with architecture choice starting with simple fully connected (feed-forward) networks and then tuned based on performance. Shallow nets would under-fit the problem, especially after we included more nuanced features like (distance_to_goal) and direction vector normalization. Increasingly deeper architecture provided the possibility of representing more complex relationships between inputs and optimal actions, but potentially at the expense of over-fitting. We minimized these techniques, such as dropout, early stopping, and batch normalization.
+Output representation (categorical vs. continuous ŷ) also drove architecture choices. For classification targets, the (softmax) output layer with cross-entropy loss was appropriate. For continuous direction vectors, we used a linear output layer and trained using mean squared error (MSE). Architecture in both cases needed to be made compatible with the nature of the prediction target to ensure stable and efficient learning. This iterative adjustment of network topology was crucial to maintaining consistent performance and is an integral component of our approach.
 
 # 6. Results
 
@@ -166,7 +158,7 @@ It is interesting to note that even though the trained models were able to emula
 
 ![](Resources/Sad.png)
 
-### 6.1  Selecting Neural Network Architecture
+### 6.1 Selecting Neural Network Architecture
 
 To observe how neural network architecture influences performance on our dataset, we experimented with several multi-layer perceptron (MLP) setups by varying both the number of layers (2 vs. 3) and the number of neurons per layer (16 to 256). We chose the more difficult dataset of `dist+goal_dir_3walls_10k`
 to see if we could extract any further performance. We observe that 2-layer MLPs perform better than deeper 3-layer ones, with the highest performance (0.846 accuracy) achieved by the [64, 32] setup. Wider architectures like [128, 64] and [256, 128] performed worse, possibly due to over-fitting or less generalization capacity for the dataset size.
@@ -194,33 +186,25 @@ Overall, these findings indicate that shallower networks with fewer layers and m
 
 # 7. Discussion
 
-
-The results demonstrate that introducing goal direction as a feature yields substantial performance gains across all models, particularly for otherwise uncertain sensor input situations. Ensemble methods, specifically Random Forest and XGBoost, posted the highest and most consistent accuracies, with both achieving 0.889 on the `dist+goal_dir_10k` dataset, indicating their robustness to moderately elevated environmental complexity. The Neural Network also performed well, achieving competitive performance with ensembles, and SVMs improved with the extra directional context but remained slightly less competitive. These results highlight the fact that providing richer spatial information greatly reduces label conflicts arising due to information asymmetry. However, the decrease in performance in the `dist+goal_dir_3walls_10k` condition reveals deficiency in partial observability and more complex obstacle situations, where local distance sensors, especially noisy sensors, cannot fully sense the global navigational space. This means that subsequent research will need to explore more sophisticated representations, such as the application of learned spatial embeddings, memory-based networks, or noise-robust sensor fusion, and, in parallel, the addition of additional sensors to expand the observability field and engineering more features to encode relevant spatial and temporal information. These features could potentially allow models to generalize more abstractly about unseen barriers, reduce the impact of noisy measurements, and stabilize decisions in adverse conditions.
+The results show that when the feature of goal direction is introduced a substantial performance gain is seen across all models. The models that saw the highest and most accurate results were the Random Forest and XGBoost models, with both achieving 0.889 on the (dist+goal_dir_10k) dataset. This is significant as the RF and XGBoost models are more interpretable than other models and this also shows their robustness to moderately elevated environmental complexity. The Neural Network model also achieved a high accuracy across varying configurations (comparable to the ensemble models) and world complexities.
+These results highlight that richer spatial information or features improves the agent's ability to choose an action that closely follows the optimal actions. In addition we do see an expected performance decrease in performance for the (dist+goal_dir_3walls_10k) experiment which introduced lengthy walls into the world indicating some deficiencies in bigger obstacle avoidance. There is an opportunity to explore more sophisticated models and representations, such as the application of learned spatial embeddings, memory-based networks, noise-robust sensor fusion, and, in parallel, the addition of additional sensors to expand the observability field and engineer more features to encode relevant spatial and temporal information. The addition of these features in the future could potentially allow models to generalize more abstractly about barrier walls and overcome the limited sensor information.
 
 # 8. Future Work
 
-
-Within the limits we established, our current approach has pushed the acuity of supervised AI models close to the limits for this task. Future efforts must include increasing the complexity of the environment and adopting more advanced learning paradigms that can handle planning, partial observability, and varied or noisy sensor inputs. On the environment side, this includes making the worlds progressively more complex—incorporating additional obstacles, varied layouts, and more challenging navigation constraints—to better mirror real-world environments. Incorporating additional sensors and features to provide richer spatial and temporal information, such as relative goal angles, local occupancy patterns, or derived spatial embeddings, could also reduce label ambiguity and improve performance.
-On the modeling front, future work needs to investigate architectures better suited to spatial and temporal reasoning. **Convolutional Neural Networks (CNNs)** can exploit local spatial patterns if sensor data is represented as a grid, while **Recurrent Neural Networks (RNNs) or LSTMs** can integrate observations over time to maintain an implicit belief state, enabling more effective decision-making in partially observable Markov decision processes (POMDPs). **Graph Neural Networks (GNNs)** are a way of reasoning about topological structures, i.e., grids with obstacle connectivity. Beyond imitation learning, **reinforcement learning approaches**—i.e., **Q-learning**, **Deep Q-Networks (DQN)**, **Proximal Policy Optimization (PPO)**, and even hierarchical planning systems like those used in **AlphaStar**—would allow agents to learn adaptive policies from reward signals directly, enabling true obstacle avoidance and goal-directed planning rather than simply imitating A\\\* outputs.
-
-Collectively, these above approaches—feature engineering, sensors that are more informative, temporal modeling, and reinforcement learning—offer a path towards agents that plan, adapt, and navigate effectively in increasingly complex and noisy environments.
-
+Within our limitations we have imposed, our existing strategy has placed the accuracy of supervised AI models to near the limits for this problem. Future research must entail making the environment more complex and introducing more advanced learning paradigms that can handle planning, partial observability, and stochastic or noisy sensor readings. On the environmental front, this entails making the worlds more complex, with increasing obstacles, varied layouts, and harder navigation constraints, to more accurately mirror real-world environments. Increasing the number of sensors and ability to provide higher spatial and temporal information, e.g., relative goal angles, local occupancy patterns, or spatial embeddings induced thereof, might also reduce label ambiguity and perform better.
+On the modeling front, future work needs to investigate more spatial and temporal reasoning-friendly architectures. Convolutional Neural Networks (CNNs) will be able to leverage local spatial patterns when sensor data is represented as a grid, but Recurrent Neural Networks (RNNs) or LSTMs will be able to accumulate observations over time so that they can maintain an implicit belief state to support improved decision-making in partially observable Markov decision processes (POMDPs). Graph Neural Networks (GNNs) offer a form of reasoning on topological structure, i.e., grid with obstacle connectivity. Apart from imitation learning, reinforcement learning algorithms, i.e., Q-learning, Deep Q-Networks (DQN), Proximal Policy Optimization (PPO), and even hierarchical planning systems like those used in AlphaStar, would allow agents to learn adaptive policies from reward signals end-to-end, enabling real obstacle avoidance and goal-directed planning rather than simply imitating A\* outputs. Collectively, said techniques comprise engineering, more informative sensors, temporal modeling, and reinforcement learning, and outline a direction to planners, adapters, and navigators that work well in increasingly more complex and noisy worlds.
 
 # 9. Conclusion
-
 
 This work investigated the impact that the feature design and model selection can have on learning navigation policies from local sensor measurements, in particular how information asymmetry and partial observability can cause conflicting action labels for otherwise identical sensors. Through running extensive experiments, we demonstrated that including distance features with goal direction significantly enhances performance across all tested models, where ensemble methods such as Random Forest and XGBoost achieved the most robust and highest accuracies. In spite of that, adding more challenging obstacle configurations revealed weaknesses in all models, most significantly under situations where local sensing cannot perceive the complete navigational context.
 
 These findings point to two key findings: one, that carefully designed features can dramatically minimize label ambiguity; and two, that conventional supervised approaches remain inherently bound in environments requiring long-horizon planning or reasoning over hidden state. Breaking such constraints will require transcending fixed feature representations to more observant sensing, temporal abstraction, and adaptive decision-making methods such as reinforcement learning and recurrent models. By combining these techniques with the proposed feature engineering and denser sensor configurations, future-generation agents could offer more robust, generalized navigation capability against sensor noise, environmental complexity, and partial observability.
 
-
 # Acknowledgment
 
-The authors acknowledge the use of AI (ChatGPT, Cursor) to assist in code experimentation, brainstorming, drafting and proff-reading.  
-
+The authors acknowledge the use of AI (ChatGPT, Cursor) to assist in code experimentation, brainstorming, drafting and proff-reading.
 
 # References
-
 
 - Codevilla, F., Santana, E., López, A. M., & Gaidon, A. (2019). Exploring the limitations of behavior cloning for autonomous driving. _arXiv_. <https://arxiv.org/abs/1904.08980>
 
@@ -235,4 +219,3 @@ The authors acknowledge the use of AI (ChatGPT, Cursor) to assist in code experi
 - Ross, S., Gordon, G. J., & Bagnell, J. A. (2011). A reduction of imitation learning and structured prediction to no-regret online learning. _arXiv_. <https://arxiv.org/abs/1011.0686>
 
 - Tamar, A., Wu, Y., Thomas, G., Levine, S., & Abbeel, P. (2017). Value iteration networks. _arXiv_. <https://arxiv.org/abs/1602.02867>
-
