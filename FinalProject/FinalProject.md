@@ -214,6 +214,10 @@ This work investigated the impact that the feature design and model selection ca
 These findings point to two key findings: one, that carefully designed features can dramatically minimize label ambiguity; and two, that conventional supervised approaches remain inherently bound in environments requiring long-horizon planning or reasoning over hidden state. Breaking such constraints will require transcending fixed feature representations to more observant sensing, temporal abstraction, and adaptive decision-making methods such as reinforcement learning and recurrent models. By combining these techniques with the proposed feature engineering and denser sensor configurations, future-generation agents could offer more robust, generalized navigation capability against sensor noise, environmental complexity, and partial observability.
 
 
+# Acknowledgment
+
+The authors acknowledge the use of AI (ChatGPT, Cursor) to assist in code experimentation, brainstorming, drafting and proff-reading.  
+
 
 # References
 

@@ -1,7 +1,7 @@
 
 WORLD_SIZE = 20
 OBSTACLE_PROB = 0.1
-WALL_COUNT = 3
+WALL_COUNT = 0
 WALL_MAX_LEN = 10
 MIN_START_GOAL_DISTANCE = 8
 SEED = 42
@@ -10,7 +10,7 @@ NN_HIDDEN_LAYERS=(256, 256, 256)
 #X_COLS=[f'sensor_{i}' for i in range(8)] + ['distance_to_goal']
 X_COLS=[f'sensor_{i}' for i in range(8)] + ['distance_to_goal', 'goal_direction']
 Y_HAT_COL=['action']
-NUM_RUNS = 10000
+NUM_RUNS = 3000
 
 # Dynamically Generate Required names based on the above vars 
 size_label = "small"
